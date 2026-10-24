@@ -57,11 +57,6 @@ export class RealtimePeerService {
 
   // 1. Initialize Real GPS Tracking
   startLocationTracking() {
-    if (!navigator.geolocation) {
-      console.warn("Geolocation is not supported by this browser.");
-      return;
-    }
-
     const onPos = (position) => {
       const { latitude, longitude, accuracy } = position.coords;
       this.currentCoords = {
@@ -80,20 +75,57 @@ export class RealtimePeerService {
     };
 
     const onErr = (err) => {
-      console.warn("GPS Location error:", err.message);
+      console.warn("GPS Location notice:", err.message);
+      if (this.onLocationChange && !this.currentCoords) {
+        this.onLocationChange({ error: true, code: err.code, message: err.message });
+      }
     };
+
+    // Try Telegram WebApp LocationManager if available
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (tg?.LocationManager) {
+        tg.LocationManager.init(() => {
+          tg.LocationManager.getLocation((data) => {
+            if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+              onPos({
+                coords: {
+                  latitude: data.latitude,
+                  longitude: data.longitude,
+                  accuracy: 5
+                }
+              });
+            }
+          });
+        });
+      }
+    } catch (e) {
+      console.warn("Telegram LocationManager notice:", e);
+    }
+
+    if (!navigator.geolocation) {
+      console.warn("Geolocation is not supported by this browser.");
+      if (this.onLocationChange) {
+        this.onLocationChange({ error: true, message: "Geolocation not supported" });
+      }
+      return;
+    }
+
+    if (this.gpsWatchId) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+    }
 
     // Immediate fix
     navigator.geolocation.getCurrentPosition(onPos, onErr, {
       enableHighAccuracy: true,
-      maximumAge: 3000,
-      timeout: 12000
+      maximumAge: 1000,
+      timeout: 10000
     });
 
-    // Continuous watch
+    // Continuous watch for real movements
     this.gpsWatchId = navigator.geolocation.watchPosition(onPos, onErr, {
       enableHighAccuracy: true,
-      maximumAge: 2000,
+      maximumAge: 1000,
       timeout: 10000
     });
   }

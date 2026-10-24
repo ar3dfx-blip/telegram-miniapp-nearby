@@ -37,13 +37,16 @@ export class MapEngine {
   }
 
   init(centerCoords, initialRadius = 10) {
-    this.currentCenter = centerCoords;
+    this.currentCenter = centerCoords || { lat: 40.1776, lng: 44.5126 };
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
+    const lat = this.currentCenter?.lat || 40.1776;
+    const lng = this.currentCenter?.lng || 44.5126;
+
     // Initialize Leaflet map with high zoom (19) for micro-proximity (0.5m - 10m)
     this.map = L.map(this.containerId, {
-      center: [centerCoords.lat, centerCoords.lng],
+      center: [lat, lng],
       zoom: 19,
       maxZoom: 21,
       zoomControl: false,
@@ -60,7 +63,9 @@ export class MapEngine {
     this.markersGroup = L.layerGroup().addTo(this.map);
 
     // User marker with Telegram live location pulsing beacon
-    this.setUserLocation(centerCoords, initialRadius);
+    if (this.currentCenter && typeof this.currentCenter.lat === 'number') {
+      this.setUserLocation(this.currentCenter, initialRadius);
+    }
   }
 
   applyTileLayer(theme = 'google-hybrid') {
@@ -92,6 +97,7 @@ export class MapEngine {
   }
 
   setUserLocation(coords, radiusMeters) {
+    if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
     this.currentCenter = coords;
     if (!this.map) return;
 

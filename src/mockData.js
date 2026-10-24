@@ -7,13 +7,6 @@ export const DEFAULT_COORDS = {
   city: "Երևան, Հանրապետության Հրապարակ"
 };
 
-export const PRESET_LOCATIONS = [
-  { id: 'square', name: 'Հանրապետության Հրապարակ', lat: 40.1776, lng: 44.5126 },
-  { id: 'cascade', name: 'Կասկադ Համալիր', lat: 40.1912, lng: 44.5155 },
-  { id: 'opera', name: 'Օպերա և Բալետի Թատրոն', lat: 40.1857, lng: 44.5152 },
-  { id: 'northern', name: 'Հյուսիսային Պողոտա', lat: 40.1818, lng: 44.5144 }
-];
-
 // SVG Avatar generator with stylish vibrant gradient backgrounds and modern character illustrations
 export function createAvatarSvg(name, bgGrad, emoji = "👤") {
   const initials = name

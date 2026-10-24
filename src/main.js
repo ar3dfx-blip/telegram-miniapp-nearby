@@ -3,7 +3,6 @@ import { translations } from './translations.js';
 import { soundManager } from './audio.js';
 import {
   DEFAULT_COORDS,
-  PRESET_LOCATIONS,
   getNearbyPeople,
   formatDistance,
   createAvatarSvg
@@ -17,7 +16,7 @@ import confetti from 'canvas-confetti';
 class AppController {
   constructor() {
     this.currentLang = this.detectTelegramLanguage();
-    this.currentCoords = { ...DEFAULT_COORDS };
+    this.currentCoords = null;
     this.currentRadius = 10;
     this.activeTab = 'radar';
     this.activeFilter = 'all';
@@ -136,7 +135,6 @@ class AppController {
     this.profileDialog = document.getElementById('profile-dialog');
     this.profileDialogBody = document.getElementById('profile-dialog-body');
     this.settingsDialog = document.getElementById('settings-dialog');
-    this.locationDialog = document.getElementById('location-dialog');
 
     // Location Banner
     this.currentLocationText = document.getElementById('current-location-text');
@@ -168,9 +166,18 @@ class AppController {
   }
 
   onRealLocationUpdated(coords) {
-    this.currentCoords = { lat: coords.lat, lng: coords.lng };
+    if (coords && coords.error) {
+      if (this.currentLocationText) {
+        this.currentLocationText.textContent = `📍 Խնդրում ենք թույլատրել GPS-ը սարքում`;
+      }
+      return;
+    }
+    if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+
+    this.currentCoords = { lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy };
     if (this.currentLocationText) {
-      this.currentLocationText.textContent = `📍 Իրական GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`;
+      const accStr = coords.accuracy ? ` (±${Math.round(coords.accuracy)}մ)` : '';
+      this.currentLocationText.textContent = `📍 Իրական GPS՝ ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}${accStr}`;
     }
     if (this.mapEngine) {
       this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
@@ -661,59 +668,24 @@ class AppController {
       });
     }
 
-    // Location Change Modal
-    const openLocModalBtn = document.getElementById('open-loc-modal-btn');
-    const closeLocationBtn = document.getElementById('close-location-btn');
-    const presetsGrid = document.getElementById('presets-grid');
-    const useGpsBtn = document.getElementById('btn-use-live-gps');
-
-    if (openLocModalBtn) {
-      openLocModalBtn.addEventListener('click', () => {
+    // Live GPS Refresh Button
+    const refreshGpsBtn = document.getElementById('refresh-gps-btn');
+    if (refreshGpsBtn) {
+      refreshGpsBtn.addEventListener('click', () => {
         soundManager.playTap();
-        this.renderLocationPresets();
-        this.locationDialog.showModal();
-      });
-    }
-
-    if (closeLocationBtn) {
-      closeLocationBtn.addEventListener('click', () => {
-        soundManager.playTap();
-        this.locationDialog.close();
-      });
-    }
-
-    // GPS Live Button
-    if (useGpsBtn) {
-      useGpsBtn.addEventListener('click', () => {
-        soundManager.playTap();
-        if (navigator.geolocation) {
-          useGpsBtn.textContent = "⏳ Որոշվում է GPS կոորդինատները...";
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              this.currentCoords = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                city: "Իմ GPS դիրքը (Ակտիվ)"
-              };
-              this.currentLocationText.textContent = `📍 ${this.currentCoords.city}`;
-              this.updatePeopleData();
-              if (this.mapEngine) this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
-              this.locationDialog.close();
-              useGpsBtn.innerHTML = `<span>🛰️</span> Ակտիվացնել Իրական GPS-ը`;
-              confetti({ particleCount: 40, spread: 60 });
-            },
-            () => {
-              alert("GPS հասանելիությունը մերժված է կամ անհասանելի: Շարունակում ենք Երևանի կենտրոնով:");
-              useGpsBtn.innerHTML = `<span>🛰️</span> Ակտիվացնել Իրական GPS-ը`;
-            },
-            { enableHighAccuracy: true, timeout: 8000 }
-          );
+        soundManager.triggerHaptic('light');
+        if (this.currentLocationText) {
+          this.currentLocationText.textContent = "📍 Թարմացվում է իրական GPS-ը...";
+        }
+        if (this.realtimeService) {
+          this.realtimeService.startLocationTracking();
         }
       });
     }
 
     // Close dialogs on outside backdrop click
-    [this.profileDialog, this.settingsDialog, this.locationDialog].forEach(dialog => {
+    [this.profileDialog, this.settingsDialog].forEach(dialog => {
+      if (!dialog) return;
       dialog.addEventListener('click', (e) => {
         const rect = dialog.getBoundingClientRect();
         const isInDialog = (
@@ -722,33 +694,6 @@ class AppController {
         );
         if (!isInDialog) {
           dialog.close();
-        }
-      });
-    });
-  }
-
-  // 10. Render Location Presets
-  renderLocationPresets() {
-    const grid = document.getElementById('presets-grid');
-    if (!grid) return;
-
-    grid.innerHTML = PRESET_LOCATIONS.map(loc => `
-      <button class="loc-preset-btn ${this.currentCoords.city === loc.name ? 'active' : ''}" data-id="${loc.id}">
-        📍 ${loc.name}
-      </button>
-    `).join('');
-
-    grid.querySelectorAll('.loc-preset-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        soundManager.playTap();
-        const id = btn.dataset.id;
-        const loc = PRESET_LOCATIONS.find(l => l.id === id);
-        if (loc) {
-          this.currentCoords = { lat: loc.lat, lng: loc.lng, city: `Երևան, ${loc.name}` };
-          this.currentLocationText.textContent = this.currentCoords.city;
-          this.updatePeopleData();
-          if (this.mapEngine) this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
-          this.locationDialog.close();
         }
       });
     });
@@ -801,6 +746,8 @@ class AppController {
     if (drawerTitleEl && t.tgDrawerTitle) drawerTitleEl.textContent = t.tgDrawerTitle;
     const shareBtnEl = document.getElementById('t-tg-share-btn');
     if (shareBtnEl && t.tgShareLive) shareBtnEl.textContent = t.tgShareLive;
+    const refreshLabel = document.getElementById('t-gps-refresh-label');
+    if (refreshLabel && t.gpsRefreshLabel) refreshLabel.textContent = t.gpsRefreshLabel;
 
     this.applyFiltersAndSearch();
   }
