@@ -578,7 +578,7 @@ class AppController {
       });
     }
 
-    // Google Maps Theme Toggle (Hybrid / Roadmap / Satellite)
+    // Google Maps Theme Toggle (Roadmap / Terrain - Pure Graphical)
     const mapThemeBtn = document.getElementById('tg-map-theme-toggle');
     if (mapThemeBtn) {
       mapThemeBtn.addEventListener('click', () => {
@@ -588,7 +588,7 @@ class AppController {
           const themeIcon = document.getElementById('tg-map-theme-icon');
           const themeText = document.getElementById('tg-map-theme-text');
           if (themeIcon) {
-            themeIcon.textContent = newTheme.includes('satellite') ? '🛰️' : (newTheme.includes('hybrid') ? '🗺️' : '🛣️');
+            themeIcon.textContent = newTheme === 'google-terrain' ? '⛰️' : '🗺️';
           }
           if (themeText) {
             themeText.textContent = this.mapEngine.getThemeName(newTheme);

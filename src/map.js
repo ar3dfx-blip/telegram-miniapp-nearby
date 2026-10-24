@@ -1,23 +1,17 @@
-// Real Google Maps Engine (Google Satellite, Hybrid & Roadmap)
+// Ultra-Lightweight Graphical Google Maps Engine (Clean Vector Roadmap)
 import L from 'leaflet';
 import { soundManager } from './audio.js';
 
 export const GOOGLE_MAP_STYLES = {
-  'google-hybrid': {
-    name: 'Google Հիբրիդ',
-    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    maxZoom: 21,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-  },
   'google-roadmap': {
-    name: 'Google Փողոցներ',
+    name: 'Google Գրաֆիկական',
     url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
     maxZoom: 21,
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
   },
-  'google-satellite': {
-    name: 'Google Արբանյակ',
-    url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+  'google-terrain': {
+    name: 'Google Ռելիեֆ',
+    url: 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
     maxZoom: 21,
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
   }
@@ -32,7 +26,7 @@ export class MapEngine {
     this.radiusCircle = null;
     this.markersGroup = null;
     this.currentCenter = null;
-    this.currentTheme = 'google-hybrid'; // Default: Real Google Hybrid Map (Satellite + Streets)
+    this.currentTheme = 'google-roadmap'; // Purely graphical, fast & lightweight
     this.tileLayer = null;
   }
 
@@ -53,7 +47,7 @@ export class MapEngine {
       attributionControl: false
     });
 
-    // Apply Real Google Maps tile layer
+    // Apply Real Google Maps Graphical tile layer
     this.applyTileLayer(this.currentTheme);
 
     // Zoom control at bottom-right
@@ -68,23 +62,25 @@ export class MapEngine {
     }
   }
 
-  applyTileLayer(theme = 'google-hybrid') {
+  applyTileLayer(theme = 'google-roadmap') {
     if (this.tileLayer && this.map) {
       this.map.removeLayer(this.tileLayer);
     }
     this.currentTheme = theme;
 
-    const style = GOOGLE_MAP_STYLES[theme] || GOOGLE_MAP_STYLES['google-hybrid'];
+    const style = GOOGLE_MAP_STYLES[theme] || GOOGLE_MAP_STYLES['google-roadmap'];
 
     this.tileLayer = L.tileLayer(style.url, {
       maxZoom: style.maxZoom || 21,
       subdomains: style.subdomains || ['mt0', 'mt1', 'mt2', 'mt3'],
+      updateWhenIdle: true,
+      keepBuffer: 2,
       attribution: '© Google Maps'
     }).addTo(this.map);
   }
 
   toggleTheme() {
-    const modes = ['google-hybrid', 'google-roadmap', 'google-satellite'];
+    const modes = ['google-roadmap', 'google-terrain'];
     const currentIndex = modes.indexOf(this.currentTheme);
     const nextIndex = (currentIndex + 1) % modes.length;
     const nextTheme = modes[nextIndex];
