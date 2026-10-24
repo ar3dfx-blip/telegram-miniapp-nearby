@@ -1,6 +1,27 @@
-// Official Telegram Style Map Engine (OpenStreetMap / CartoDB Voyager)
+// Real Google Maps Engine (Google Satellite, Hybrid & Roadmap)
 import L from 'leaflet';
 import { soundManager } from './audio.js';
+
+export const GOOGLE_MAP_STYLES = {
+  'google-hybrid': {
+    name: 'Google Հիբրիդ',
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    maxZoom: 21,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  },
+  'google-roadmap': {
+    name: 'Google Փողոցներ',
+    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    maxZoom: 21,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  },
+  'google-satellite': {
+    name: 'Google Արբանյակ',
+    url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    maxZoom: 21,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  }
+};
 
 export class MapEngine {
   constructor(mapContainerId, onSelectPerson) {
@@ -11,7 +32,7 @@ export class MapEngine {
     this.radiusCircle = null;
     this.markersGroup = null;
     this.currentCenter = null;
-    this.currentTheme = 'voyager'; // 'voyager' (Telegram standard OpenStreetMap) or 'dark'
+    this.currentTheme = 'google-hybrid'; // Default: Real Google Hybrid Map (Satellite + Streets)
     this.tileLayer = null;
   }
 
@@ -24,12 +45,12 @@ export class MapEngine {
     this.map = L.map(this.containerId, {
       center: [centerCoords.lat, centerCoords.lng],
       zoom: 19,
-      maxZoom: 20,
+      maxZoom: 21,
       zoomControl: false,
       attributionControl: false
     });
 
-    // Apply Telegram standard OpenStreetMap tile layer (CartoDB Voyager)
+    // Apply Real Google Maps tile layer
     this.applyTileLayer(this.currentTheme);
 
     // Zoom control at bottom-right
@@ -42,27 +63,32 @@ export class MapEngine {
     this.setUserLocation(centerCoords, initialRadius);
   }
 
-  applyTileLayer(theme = 'voyager') {
+  applyTileLayer(theme = 'google-hybrid') {
     if (this.tileLayer && this.map) {
       this.map.removeLayer(this.tileLayer);
     }
     this.currentTheme = theme;
 
-    // OpenStreetMap layers used natively by Telegram Web & Desktop
-    const tileUrl = theme === 'voyager'
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    const style = GOOGLE_MAP_STYLES[theme] || GOOGLE_MAP_STYLES['google-hybrid'];
 
-    this.tileLayer = L.tileLayer(tileUrl, {
-      maxZoom: 20,
-      subdomains: 'abcd'
+    this.tileLayer = L.tileLayer(style.url, {
+      maxZoom: style.maxZoom || 21,
+      subdomains: style.subdomains || ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '© Google Maps'
     }).addTo(this.map);
   }
 
   toggleTheme() {
-    const nextTheme = this.currentTheme === 'voyager' ? 'dark' : 'voyager';
+    const modes = ['google-hybrid', 'google-roadmap', 'google-satellite'];
+    const currentIndex = modes.indexOf(this.currentTheme);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextTheme = modes[nextIndex];
     this.applyTileLayer(nextTheme);
     return nextTheme;
+  }
+
+  getThemeName(theme) {
+    return GOOGLE_MAP_STYLES[theme]?.name || 'Google Maps';
   }
 
   setUserLocation(coords, radiusMeters) {

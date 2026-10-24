@@ -5,11 +5,13 @@ import {
   DEFAULT_COORDS,
   PRESET_LOCATIONS,
   getNearbyPeople,
-  formatDistance
+  formatDistance,
+  createAvatarSvg
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
 import { ChatEngine } from './chat.js';
+import { RealtimePeerService } from './realtime.js';
 import confetti from 'canvas-confetti';
 
 class AppController {
@@ -22,7 +24,9 @@ class AppController {
     this.searchQuery = '';
     this.previousTab = 'radar';
 
-    // State
+    // State - 100% Real People by default (Zero Fake Profiles)
+    this.isRealMode = true;
+    this.realPeers = [];
     this.people = [];
     this.filteredPeople = [];
     this.selectedPerson = null;
@@ -36,13 +40,15 @@ class AppController {
       ghost: false
     };
 
-    // Engines
+    // Engines & Realtime Service
     this.radarEngine = null;
     this.mapEngine = null;
     this.chatEngine = null;
+    this.realtimeService = null;
 
     this.initTelegramWebApp();
     this.initElements();
+    this.initRealtimeService();
     this.updatePeopleData();
     this.initEngines();
     this.setupEventListeners();
@@ -151,9 +157,58 @@ class AppController {
     });
   }
 
+  // Real-Time Peer & Live GPS Service Initialization
+  initRealtimeService() {
+    this.realtimeService = new RealtimePeerService(
+      this.myProfile,
+      (peers) => this.onLivePeersUpdated(peers),
+      (coords) => this.onRealLocationUpdated(coords)
+    );
+    this.realtimeService.connect();
+  }
+
+  onRealLocationUpdated(coords) {
+    this.currentCoords = { lat: coords.lat, lng: coords.lng };
+    if (this.currentLocationText) {
+      this.currentLocationText.textContent = `📍 Իրական GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`;
+    }
+    if (this.mapEngine) {
+      this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
+      this.mapEngine.recenter();
+    }
+    this.updatePeopleData();
+  }
+
+  onLivePeersUpdated(peers) {
+    this.realPeers = peers;
+    this.updatePeopleData();
+  }
+
   // 4. Update data on coordinates/radius changes
   updatePeopleData() {
-    this.people = getNearbyPeople(this.currentCoords);
+    if (this.isRealMode) {
+      // 100% Real Live Connected People (Zero Mock / Fake Profiles)
+      this.people = this.realPeers.map(p => ({
+        id: p.id,
+        name: p.name,
+        username: p.username,
+        avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#24a1de', '#0088cc'], '👤'),
+        bio: p.status || 'Օնլայն իրական օգտատեր Telegram-ում',
+        interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby'],
+        online: true,
+        distanceMeters: p.distanceMeters || 0.8,
+        bearing: p.bearing !== undefined ? p.bearing : 0,
+        lat: p.lat,
+        lng: p.lng,
+        lastSeen: 'Հենց հիմա',
+        statusEmoji: '⚡',
+        telegramId: p.telegramId || null
+      }));
+    } else {
+      // Demo test mode (only if toggled by user)
+      this.people = getNearbyPeople(this.currentCoords);
+    }
+
     this.applyFiltersAndSearch();
   }
 
@@ -216,12 +271,23 @@ class AppController {
 
     if (this.filteredPeople.length === 0) {
       this.cardsContainer.innerHTML = `
-        <div style="text-align:center; padding: 40px 16px; color: var(--tg-hint);">
-          <div style="font-size: 38px; margin-bottom: 10px;">🔍</div>
-          <h4 style="color:#ffffff; margin-bottom:6px;">Ոչ ոք չի գտնվել</h4>
-          <p style="font-size:13px;">Փորձեք մեծացնել որոնման շառավիղը կամ փոխել ֆիլտրերը:</p>
+        <div class="empty-real-peers-card" style="text-align:center; padding: 36px 18px; color: var(--tg-hint); background: var(--crystal-bg); border: 1px solid var(--crystal-border); border-radius: var(--radius-md); box-shadow: var(--crystal-shadow); margin-top: 10px;">
+          <div style="font-size: 42px; margin-bottom: 12px;">📡</div>
+          <h3 style="color:#ffffff; font-size:16px; font-weight:800; margin-bottom:8px;">Իրական GPS ցանցն ակտիվ է</h3>
+          <p style="font-size:13px; line-height:1.5; color: var(--tg-hint); margin-bottom: 18px;">
+            ${this.currentRadius} մետր շառավղով այս պահին այլ միացած մարդիկ չկան: Կիսվեք հղումով ձեր կողքին գտնվող ընկերոջ հետ՝ անմիջապես միանալու համար:
+          </p>
+          <button class="btn-chat-primary share-invite-btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+            </svg>
+            <span>Հրավիրել մոտակա ընկերոջը (Կիսվել)</span>
+          </button>
         </div>
       `;
+      this.cardsContainer.querySelector('.share-invite-btn')?.addEventListener('click', () => {
+        this.shareAppWithFriends();
+      });
       return;
     }
 
@@ -427,6 +493,21 @@ class AppController {
       this.openChatWith(person);
     });
 
+    const tgLinkBtn = this.profileDialogBody.querySelector('#modal-tg-direct-link');
+    if (tgLinkBtn) {
+      tgLinkBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        soundManager.playTap();
+        const tgUrl = `https://t.me/${person.username}`;
+        const tg = window.Telegram?.WebApp;
+        if (tg?.openTelegramLink) {
+          tg.openTelegramLink(tgUrl);
+        } else {
+          window.open(tgUrl, '_blank');
+        }
+      });
+    }
+
     this.profileDialogBody.querySelector('#modal-say-hi-btn').addEventListener('click', () => {
       soundManager.playSent();
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
@@ -485,7 +566,7 @@ class AppController {
       });
     }
 
-    // Telegram Map Theme Toggle (OpenStreetMap Voyager / Dark)
+    // Google Maps Theme Toggle (Hybrid / Roadmap / Satellite)
     const mapThemeBtn = document.getElementById('tg-map-theme-toggle');
     if (mapThemeBtn) {
       mapThemeBtn.addEventListener('click', () => {
@@ -493,8 +574,12 @@ class AppController {
         if (this.mapEngine) {
           const newTheme = this.mapEngine.toggleTheme();
           const themeIcon = document.getElementById('tg-map-theme-icon');
+          const themeText = document.getElementById('tg-map-theme-text');
           if (themeIcon) {
-            themeIcon.textContent = newTheme === 'voyager' ? '☀️' : '🌙';
+            themeIcon.textContent = newTheme.includes('satellite') ? '🛰️' : (newTheme.includes('hybrid') ? '🗺️' : '🛣️');
+          }
+          if (themeText) {
+            themeText.textContent = this.mapEngine.getThemeName(newTheme);
           }
         }
       });
@@ -505,9 +590,7 @@ class AppController {
     if (shareLiveBtn) {
       shareLiveBtn.addEventListener('click', () => {
         soundManager.triggerHaptic('success');
-        confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
-        shareLiveBtn.innerHTML = `<span>✅</span> Live Դիրքը ակտիվ է Telegram-ում`;
-        shareLiveBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        this.shareAppWithFriends();
       });
     }
 
@@ -526,11 +609,11 @@ class AppController {
       });
     }
 
-
     // Settings Modal
     const openSettingsBtn = document.getElementById('open-settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const realToggle = document.getElementById('toggle-real-mode');
 
     if (openSettingsBtn) {
       openSettingsBtn.addEventListener('click', () => {
@@ -539,7 +622,15 @@ class AppController {
         document.getElementById('my-status-input').value = this.myProfile.status;
         document.getElementById('toggle-visible').checked = this.myProfile.visible;
         document.getElementById('toggle-ghost').checked = this.myProfile.ghost;
+        if (realToggle) realToggle.checked = this.isRealMode;
         this.settingsDialog.showModal();
+      });
+    }
+
+    if (realToggle) {
+      realToggle.addEventListener('change', (e) => {
+        this.isRealMode = e.target.checked;
+        this.updatePeopleData();
       });
     }
 
@@ -557,6 +648,14 @@ class AppController {
         this.myProfile.status = document.getElementById('my-status-input').value;
         this.myProfile.visible = document.getElementById('toggle-visible').checked;
         this.myProfile.ghost = document.getElementById('toggle-ghost').checked;
+        if (realToggle) {
+          this.isRealMode = realToggle.checked;
+          this.updatePeopleData();
+        }
+        if (this.realtimeService) {
+          this.realtimeService.myProfile = this.myProfile;
+          this.realtimeService.broadcastMyPresence();
+        }
         this.settingsDialog.close();
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
       });
@@ -718,6 +817,21 @@ class AppController {
       countBadge.textContent = `${nearby.length} ${t.peopleFound}`;
     }
 
+    if (nearby.length === 0) {
+      drawerList.innerHTML = `
+        <div style="padding: 12px 14px; color: var(--tg-hint); font-size: 13px; text-align: center; width: 100%;">
+          <div>${this.currentRadius}մ շառավղով այլ միացած մարդիկ չկան:</div>
+          <button class="btn-chat-primary share-invite-btn-drawer" style="margin-top:8px; padding:6px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px; margin-left:auto; margin-right:auto;">
+            <span>📲</span> Կիսվել հղումով ընկերոջ հետ
+          </button>
+        </div>
+      `;
+      drawerList.querySelector('.share-invite-btn-drawer')?.addEventListener('click', () => {
+        this.shareAppWithFriends();
+      });
+      return;
+    }
+
     drawerList.innerHTML = nearby.map(p => {
       const dStr = formatDistance(p.distanceMeters, this.currentLang);
       return `
@@ -738,6 +852,21 @@ class AppController {
         if (person) this.openProfileModal(person);
       });
     });
+  }
+
+  shareAppWithFriends() {
+    const shareUrl = "https://ar3dfx-blip.github.io/telegram-miniapp-nearby/";
+    const text = "Միացեք ինձ Telegram Mini App-ում՝ մոտակա կապ հաստատելու համար (0.5մ - 10մ):";
+    const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+
+    const tg = window.Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(tgShareUrl);
+    } else if (navigator.share) {
+      navigator.share({ title: 'Մոտակա Կապ', text, url: shareUrl }).catch(() => {});
+    } else {
+      window.open(tgShareUrl, '_blank');
+    }
   }
 
   // Detect language matching Telegram user or browser

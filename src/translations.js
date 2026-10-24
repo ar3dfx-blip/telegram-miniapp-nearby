@@ -62,7 +62,7 @@ export const translations = {
     yerevanCascade: "Երևան, Կասկադ",
     yerevanOpera: "Երևան, Օպերայի հարևանությամբ",
     gpsLive: "Իմ իրական GPS դիրքը",
-    tgMapBadge: "Telegram Live Քարտեզ",
+    tgMapBadge: "Google Maps Live",
     tgDrawerTitle: "Մոտակա Մարդիկ (Live)",
     tgShareLive: "Կիսվել Իմ Live Տեղադրությամբ"
   },
@@ -128,7 +128,7 @@ export const translations = {
     yerevanCascade: "Yerevan, Cascade Complex",
     yerevanOpera: "Yerevan, Opera Theater",
     gpsLive: "My live GPS location",
-    tgMapBadge: "Telegram Live Map",
+    tgMapBadge: "Google Maps Live",
     tgDrawerTitle: "People Nearby (Live)",
     tgShareLive: "Share My Live Location"
   },
@@ -194,7 +194,7 @@ export const translations = {
     yerevanCascade: "Ереван, Каскад",
     yerevanOpera: "Ереван, возле Оперы",
     gpsLive: "Мой реальный GPS",
-    tgMapBadge: "Telegram Live Карта",
+    tgMapBadge: "Google Maps Live",
     tgDrawerTitle: "Люди Рядом (Live)",
     tgShareLive: "Поделиться Геопозицией Live"
   }
