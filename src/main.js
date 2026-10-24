@@ -313,10 +313,10 @@ class AppController {
     if (this.filteredPeople.length === 0) {
       if (isSearching) {
         this.cardsContainer.innerHTML = `
-          <div class="empty-search-card" style="text-align:center; padding: 36px 18px; color: var(--tg-hint); background: var(--crystal-bg); border: 1px solid var(--crystal-border); border-radius: var(--radius-md); box-shadow: var(--crystal-shadow); margin-top: 10px;">
+          <div class="empty-search-card" style="text-align:center; padding: 36px 18px; color: var(--text-color); background: var(--bg-secondary); border-radius: 20px; box-shadow: var(--neu-flat-card); margin-top: 10px;">
             <div style="font-size: 38px; margin-bottom: 12px;">🔍</div>
-            <h3 style="color:#ffffff; font-size:16px; font-weight:700; margin-bottom:6px;">«${this.searchQuery}» անունով օգտատեր չգտնվեց</h3>
-            <p style="font-size:13px; line-height:1.5; color: var(--tg-hint); margin-bottom: 0;">
+            <h3 style="color: var(--text-dark); font-size:16px; font-weight:700; margin-bottom:6px;">«${this.searchQuery}» անունով օգտատեր չգտնվեց</h3>
+            <p style="font-size:13px; line-height:1.5; color: var(--text-color); margin-bottom: 0;">
               Փորձեք մուտքագրել անվան այլ տարբերակ (հայերեն կամ լատինատառ) կամ Telegram @username:
             </p>
           </div>
@@ -325,10 +325,10 @@ class AppController {
       }
 
       this.cardsContainer.innerHTML = `
-        <div class="empty-real-peers-card" style="text-align:center; padding: 36px 18px; color: var(--tg-hint); background: var(--crystal-bg); border: 1px solid var(--crystal-border); border-radius: var(--radius-md); box-shadow: var(--crystal-shadow); margin-top: 10px;">
+        <div class="empty-real-peers-card" style="text-align:center; padding: 36px 18px; color: var(--text-color); background: var(--bg-secondary); border-radius: 20px; box-shadow: var(--neu-flat-card); margin-top: 10px;">
           <div style="font-size: 42px; margin-bottom: 12px;">📡</div>
-          <h3 style="color:#ffffff; font-size:16px; font-weight:800; margin-bottom:8px;">Իրական GPS ցանցն ակտիվ է</h3>
-          <p style="font-size:13px; line-height:1.5; color: var(--tg-hint); margin-bottom: 18px;">
+          <h3 style="color: var(--text-dark); font-size:16px; font-weight:800; margin-bottom:8px;">Իրական GPS ցանցն ակտիվ է</h3>
+          <p style="font-size:13px; line-height:1.5; color: var(--text-color); margin-bottom: 18px;">
             ${this.currentRadius} մետր շառավղով այս պահին այլ միացած մարդիկ չկան: Կիսվեք հղումով ձեր կողքին գտնվող ընկերոջ հետ՝ անմիջապես միանալու համար:
           </p>
           <button class="btn-chat-primary share-invite-btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -346,12 +346,12 @@ class AppController {
     }
 
     const searchBannerHtml = isSearching ? `
-      <div class="search-active-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 10px 14px; margin-bottom: 12px; background: rgba(36, 161, 222, 0.12); border: 1px solid rgba(36, 161, 222, 0.3); border-radius: 12px; font-size: 13px; color: #e2f4ff;">
+      <div class="search-active-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; margin-bottom: 14px; background: var(--bg-secondary); box-shadow: var(--neu-flat-sm); border-radius: 16px; font-size: 13px; color: var(--text-dark);">
         <div style="display:flex; align-items:center; gap:8px;">
           <span>🔍</span>
           <span>Որոնում՝ <strong>«${this.searchQuery}»</strong> (անկախ հեռավորությունից)</span>
         </div>
-        <span style="font-weight:700; background:rgba(36,161,222,0.3); padding:2px 8px; border-radius:10px; font-size:12px; color:#ffffff;">${this.filteredPeople.length} մարդ</span>
+        <span style="font-weight:700; background: linear-gradient(135deg, #ff5e5e, #ff8a80); padding:3px 10px; border-radius:12px; font-size:12px; color:#ffffff; box-shadow: 0 2px 6px rgba(255,94,94,0.35);">${this.filteredPeople.length} մարդ</span>
       </div>
     ` : '';
 
@@ -514,7 +514,7 @@ class AppController {
 
       <div class="profile-section-card">
         <div class="section-label">${t.profileAbout}</div>
-        <div style="font-size:14px; color:#e2e8f0; line-height:1.5;">${person.bio}</div>
+        <div style="font-size:14px; color:var(--text-dark); line-height:1.5;">${person.bio}</div>
       </div>
 
       <div class="profile-section-card">

@@ -154,16 +154,21 @@ export class RadarEngine {
 
     ctx.clearRect(0, 0, width, height);
 
-    // 1. Radar background glow & container
+    // 1. Radar background: Soft tactile neumorphic surface
     const bgGrad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, radarRadius);
-    bgGrad.addColorStop(0, 'rgba(10, 25, 45, 0.95)');
-    bgGrad.addColorStop(0.7, 'rgba(8, 20, 36, 0.85)');
-    bgGrad.addColorStop(1, 'rgba(5, 12, 22, 0.9)');
+    bgGrad.addColorStop(0, '#f2f3f7');
+    bgGrad.addColorStop(0.7, '#eaecf2');
+    bgGrad.addColorStop(1, '#dfe2e8');
 
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Outer subtle dial bevel stroke
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
 
     // 2. Concentric distance rings
     const ringSteps = [0.25, 0.5, 0.75, 1.0];
@@ -172,7 +177,7 @@ export class RadarEngine {
 
     ringSteps.forEach((step, idx) => {
       const r = radarRadius * step;
-      ctx.strokeStyle = idx === ringSteps.length - 1 ? 'rgba(36, 161, 222, 0.45)' : 'rgba(36, 161, 222, 0.2)';
+      ctx.strokeStyle = idx === ringSteps.length - 1 ? 'rgba(210, 213, 219, 0.95)' : 'rgba(210, 213, 219, 0.65)';
       ctx.beginPath();
       ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
       ctx.stroke();
@@ -181,8 +186,8 @@ export class RadarEngine {
       const val = this.maxRadiusMeters * step;
       const unit = this.lang === 'hy' ? 'մ' : this.lang === 'ru' ? 'м' : 'm';
       const distLabel = (Number.isInteger(val) ? val : val.toFixed(1)) + unit;
-      ctx.fillStyle = 'rgba(36, 161, 222, 0.75)';
-      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = '#8c8f94';
+      ctx.font = '500 10px Inter, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(distLabel, centerX, centerY - r + 12);
     });
@@ -190,7 +195,7 @@ export class RadarEngine {
     ctx.setLineDash([]);
 
     // 3. Crosshairs & Axis lines
-    ctx.strokeStyle = 'rgba(36, 161, 222, 0.18)';
+    ctx.strokeStyle = 'rgba(210, 213, 219, 0.5)';
     ctx.lineWidth = 1;
 
     ctx.beginPath();
@@ -206,42 +211,45 @@ export class RadarEngine {
     const wLabel = this.lang === 'ru' ? 'З (W)' : this.lang === 'en' ? 'W' : 'ԱՐՄ (W)';
     const eLabel = this.lang === 'ru' ? 'В (E)' : this.lang === 'en' ? 'E' : 'ԱՐԼ (E)';
 
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.fillStyle = '#24a1de';
+    ctx.font = '600 11px Inter, -apple-system, sans-serif';
+    ctx.fillStyle = '#945eff'; // Accent purple for North
     ctx.textAlign = 'center';
     ctx.fillText(nLabel, centerX, centerY - radarRadius - 6);
+
+    ctx.fillStyle = '#8c8f94';
     ctx.fillText(sLabel, centerX, centerY + radarRadius + 15);
-    ctx.fillText(wLabel, centerX - radarRadius - 10, centerY + 4);
+    ctx.fillText(wLabel, centerX - radarRadius - 12, centerY + 4);
     ctx.fillText(eLabel, centerX + radarRadius + 12, centerY + 4);
 
-    // 4. Sonar Rotating Sweep Beam
+    // 4. Sonar Rotating Sweep Beam (Soft purple accent glow)
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radarRadius, this.angle - 0.4, this.angle);
+    ctx.arc(centerX, centerY, radarRadius, this.angle - 0.45, this.angle);
     ctx.closePath();
 
     const sweepGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radarRadius);
-    sweepGrad.addColorStop(0, 'rgba(0, 229, 255, 0.45)');
-    sweepGrad.addColorStop(1, 'rgba(36, 161, 222, 0.02)');
+    sweepGrad.addColorStop(0, 'rgba(148, 94, 255, 0.32)');
+    sweepGrad.addColorStop(0.7, 'rgba(175, 135, 255, 0.12)');
+    sweepGrad.addColorStop(1, 'rgba(242, 243, 247, 0.01)');
     ctx.fillStyle = sweepGrad;
     ctx.fill();
 
-    // Sweep leading edge bright line
+    // Sweep leading edge line
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
       centerX + radarRadius * Math.cos(this.angle),
       centerY + radarRadius * Math.sin(this.angle)
     );
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 94, 255, 0.85)';
     ctx.lineWidth = 2;
-    ctx.shadowColor = '#00f0ff';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(148, 94, 255, 0.4)';
+    ctx.shadowBlur = 8;
     ctx.stroke();
     ctx.restore();
 
-    // 5. Draw People Blips
+    // 5. Draw People Blips (Neumorphic coral/purple glowing nodes)
     for (const person of this.people) {
       if (person.distanceMeters > this.maxRadiusMeters) continue;
 
@@ -268,19 +276,19 @@ export class RadarEngine {
       if (ping > 0.05) {
         ctx.beginPath();
         ctx.arc(blip.x, blip.y, 8 + (1 - ping) * 22, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 255, 170, ${ping * 0.8})`;
+        ctx.strokeStyle = person.online ? `rgba(255, 94, 94, ${ping * 0.7})` : `rgba(148, 94, 255, ${ping * 0.7})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
-      // Draw blip circle
+      // Draw 3D blip circle
       const isHovered = this.hoveredPerson?.id === person.id;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(blip.x, blip.y, isHovered ? 9 : 6.5, 0, Math.PI * 2);
-      ctx.fillStyle = person.online ? '#00e676' : '#24a1de';
-      ctx.shadowColor = person.online ? '#00e676' : '#24a1de';
-      ctx.shadowBlur = isHovered ? 14 : 7;
+      ctx.arc(blip.x, blip.y, isHovered ? 9.5 : 7, 0, Math.PI * 2);
+      ctx.fillStyle = person.online ? '#ff5e5e' : '#945eff';
+      ctx.shadowColor = person.online ? 'rgba(255, 94, 94, 0.45)' : 'rgba(148, 94, 255, 0.45)';
+      ctx.shadowBlur = isHovered ? 12 : 6;
       ctx.fill();
 
       ctx.lineWidth = 2;
@@ -288,38 +296,55 @@ export class RadarEngine {
       ctx.stroke();
       ctx.restore();
 
-      // Mini status tag or distance if hovered or very close
+      // Mini status tag if hovered or very close
       if (isHovered || person.distanceMeters <= 1.2) {
-        ctx.font = 'bold 9px -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 4;
-        ctx.fillText(person.name.split(' ')[0], blip.x, blip.y - 12);
+        const nameStr = person.name.split(' ')[0];
         const unit = this.lang === 'hy' ? 'մ' : this.lang === 'ru' ? 'м' : 'm';
         const dText = (Number.isInteger(person.distanceMeters) ? person.distanceMeters : person.distanceMeters.toFixed(1)) + unit;
-        ctx.fillText(dText, blip.x, blip.y + 17);
+        
+        ctx.save();
+        ctx.font = '600 10px Inter, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        
+        // Card pill background
+        const textWidth = Math.max(ctx.measureText(nameStr).width, ctx.measureText(dText).width) + 12;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(210, 213, 219, 0.8)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.roundRect(blip.x - textWidth / 2, blip.y - 28, textWidth, 18, 6);
+        ctx.fill();
+        
         ctx.shadowBlur = 0;
+        ctx.fillStyle = '#2a2e37';
+        ctx.fillText(`${nameStr} • ${dText}`, blip.x, blip.y - 15);
+        ctx.restore();
       }
     }
 
-    // 6. Draw Center Dot (User Location with Peach App Logo)
+    // 6. Center Knob Dial: 3D circular dial with multi-layer soft concentric shadows
     ctx.save();
-    // Radiating peach & cyan neon user ripple
+    // Radiating user ripple
     const rippleRadius = 13 + (Math.sin(Date.now() / 250) + 1) * 7;
     ctx.beginPath();
     ctx.arc(centerX, centerY, rippleRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 140, 105, 0.4)';
+    ctx.strokeStyle = 'rgba(148, 94, 255, 0.35)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Center circular badge with glowing shadow
-    const centerRadius = 12;
+    // Concentric base outer ring (inset shadow illusion)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(210, 213, 219, 0.35)';
+    ctx.fill();
+
+    // Center circular dial badge
+    const centerRadius = 14;
     ctx.beginPath();
     ctx.arc(centerX, centerY, centerRadius + 2, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(255, 140, 105, 0.7)';
-    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(210, 213, 219, 0.9)';
+    ctx.shadowBlur = 10;
     ctx.fill();
 
     if (this.logoImg && this.logoImg.complete && this.logoImg.naturalWidth > 0) {
@@ -338,14 +363,14 @@ export class RadarEngine {
     } else {
       ctx.beginPath();
       ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff8a65';
+      ctx.fillStyle = '#ff5e5e';
       ctx.fill();
     }
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, centerRadius + 1.5, 0, Math.PI * 2);
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
     ctx.restore();
   }

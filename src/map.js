@@ -108,9 +108,9 @@ export class MapEngine {
     // Telegram Live Location search boundary circle
     this.radiusCircle = L.circle([coords.lat, coords.lng], {
       radius: radiusMeters,
-      color: '#24a1de',
-      fillColor: '#24a1de',
-      fillOpacity: 0.15,
+      color: '#945eff',
+      fillColor: '#945eff',
+      fillOpacity: 0.12,
       weight: 2,
       dashArray: '4, 6'
     }).addTo(this.map);
