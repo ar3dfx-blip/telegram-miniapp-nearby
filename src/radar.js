@@ -17,6 +17,9 @@ export class RadarEngine {
 
     this.blipPings = new Map(); // personId -> ping intensity (1.0 to 0.0)
 
+    this.logoImg = new Image();
+    this.logoImg.src = './logo.png';
+
     this.setupListeners();
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -300,23 +303,47 @@ export class RadarEngine {
       }
     }
 
-    // 6. Draw Center Dot (User Location)
+    // 6. Draw Center Dot (User Location with Peach App Logo)
     ctx.save();
-    // Radiating user ripple
-    const rippleRadius = 10 + (Math.sin(Date.now() / 250) + 1) * 6;
+    // Radiating peach & cyan neon user ripple
+    const rippleRadius = 13 + (Math.sin(Date.now() / 250) + 1) * 7;
     ctx.beginPath();
     ctx.arc(centerX, centerY, rippleRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 162, 255, 0.4)';
+    ctx.strokeStyle = 'rgba(255, 140, 105, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Center avatar/icon circle
+    // Center circular badge with glowing shadow
+    const centerRadius = 12;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#0088cc';
-    ctx.shadowColor = '#00c6ff';
+    ctx.arc(centerX, centerY, centerRadius + 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255, 140, 105, 0.7)';
     ctx.shadowBlur = 12;
     ctx.fill();
+
+    if (this.logoImg && this.logoImg.complete && this.logoImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        this.logoImg,
+        centerX - centerRadius,
+        centerY - centerRadius,
+        centerRadius * 2,
+        centerRadius * 2
+      );
+      ctx.restore();
+    } else {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff8a65';
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, centerRadius + 1.5, 0, Math.PI * 2);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();

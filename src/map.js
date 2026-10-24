@@ -115,7 +115,7 @@ export class MapEngine {
       dashArray: '4, 6'
     }).addTo(this.map);
 
-    // Telegram Signature Live Navigation Beacon (Blue circle with white border & navigation arrow)
+    // Telegram Signature Live Navigation Beacon with App Logo
     const userIcon = L.divIcon({
       className: 'tg-live-beacon-icon',
       html: `
@@ -123,9 +123,7 @@ export class MapEngine {
           <div class="tg-beacon-ring"></div>
           <div class="tg-beacon-ring tg-ring-delayed"></div>
           <div class="tg-beacon-core">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff">
-              <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
-            </svg>
+            <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
           </div>
         </div>
       `,
