@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="hy">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Մոտակա Կապ | Telegram Mini App</title>
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Main Application Header -->
+      <header class="app-header">
+        <div class="header-top-row">
+          <div class="app-branding">
+            <div class="brand-icon-wrapper">
+              <div class="brand-pulse"></div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                <path d="M2 12h20"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="brand-title" id="t-app-title">Մոտակա Կապ</h1>
+              <p class="brand-subtitle" id="t-app-subtitle">Գտեք մոտակա մարդկանց</p>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <!-- Language switcher -->
+            <button class="icon-btn" id="lang-toggle-btn" title="Լեզու / Language">
+              <span id="current-lang-code" style="font-weight:700; font-size:12px;">🇦🇲</span>
+            </button>
+
+            <!-- Profile & Settings button -->
+            <button class="icon-btn" id="open-settings-btn" title="Իմ պրոֆիլը և կարգավորումները">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Location banner -->
+        <div class="location-banner">
+          <div class="location-info">
+            <span id="loc-pin-icon">📍</span>
+            <span id="current-location-text">Երևան, Հանրապետության Հրապարակ</span>
+          </div>
+          <button class="location-change-btn" id="open-loc-modal-btn">Փոխել ▾</button>
+        </div>
+      </header>
+
+      <!-- Navigation Tabs (Radar / Map / List) -->
+      <nav class="view-nav-tabs" id="main-nav-tabs">
+        <button class="nav-tab-btn active" data-tab="radar" id="tab-radar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a10 10 0 0 1 10 10"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+          <span id="t-tab-radar">Ռադար</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="map" id="tab-map-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+          <span id="t-tab-map">Քարտեզ</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="list" id="tab-list-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span id="t-tab-list">Ցուցակ</span>
+        </button>
+      </nav>
+
+      <!-- MAIN VIEWS -->
+      <main id="views-viewport" style="flex:1; display:flex; flex-direction:column;">
+        
+        <!-- 1. RADAR VIEW -->
+        <section id="radar-view" class="radar-view-container">
+          <div class="radar-canvas-card">
+            <canvas id="radar-canvas"></canvas>
+          </div>
+
+          <div class="radar-controls-card">
+            <div class="controls-row">
+              <span class="range-label" id="t-radius-label">Շառավիղ՝</span>
+              <span class="range-value" id="radar-range-display">10 մետր</span>
+            </div>
+            <input
+              type="range"
+              id="radar-radius-slider"
+              class="radius-range-slider"
+              min="0.5"
+              max="10"
+              step="0.5"
+              value="10"
+            />
+            <div class="radar-stats-pills">
+              <div class="stat-badge online-stat">
+                <span class="badge-dot" style="width:7px; height:7px; border-radius:50%; background:#00e676; display:inline-block;"></span>
+                <span id="radar-count-online">6 օնլայն</span>
+              </div>
+              <div class="stat-badge">
+                <span id="radar-count-total">Գտնվել է 10 մարդ</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. MAP VIEW (Telegram Official In-App Map Style) -->
+        <section id="map-view" class="map-view-container" style="display:none;">
+          <!-- Telegram Map Top Floating Header -->
+          <div class="tg-map-top-bar">
+            <div class="tg-map-badge">
+              <span class="tg-live-dot"></span>
+              <span id="t-tg-map-badge">Telegram Live Map</span>
+            </div>
+            <button class="tg-map-theme-btn" id="tg-map-theme-toggle" title="Փոխել քարտեզի ոճը">
+              <span id="tg-map-theme-icon">🌓</span> Ոճ
+            </button>
+          </div>
+
+          <div id="leaflet-map"></div>
+
+          <!-- Telegram GPS Target Recenter Button -->
+          <button class="tg-recenter-btn" id="map-recenter-btn" title="Իմ Դիրքը">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24a1de" stroke-width="2.5">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+            </svg>
+          </button>
+
+          <!-- Telegram Live Location Bottom Sheet -->
+          <div class="tg-map-drawer">
+            <div class="tg-drawer-pill"></div>
+            <div class="tg-drawer-header">
+              <div class="tg-drawer-title-wrap">
+                <span style="font-size:15px;">📍</span>
+                <span class="tg-drawer-title" id="t-tg-drawer-title">Մոտակա Մարդիկ (Live)</span>
+              </div>
+              <span class="tg-drawer-count" id="tg-drawer-count">10 մարդ</span>
+            </div>
+
+            <!-- Horizontal quick list of nearby people -->
+            <div class="tg-drawer-people-scroll" id="tg-drawer-people-list">
+              <!-- Dynamically populated by main.js -->
+            </div>
+
+            <button class="tg-drawer-share-btn" id="tg-drawer-share-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+              </svg>
+              <span id="t-tg-share-btn">Կիսվել Իմ Live Տեղադրությամբ</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. LIST VIEW -->
+        <section id="list-view" class="list-view-container" style="display:none;">
+          <!-- Search box -->
+          <div class="search-box-wrapper">
+            <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              id="list-search-input"
+              class="search-input"
+              placeholder="Փնտրել անունով, հետաքրքրություններով..."
+            />
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="filter-pills-row" id="filter-pills">
+            <button class="filter-pill active" data-filter="all" id="pill-all">Բոլորը</button>
+            <button class="filter-pill" data-filter="online" id="pill-online">Օնլայն</button>
+            <button class="filter-pill" data-filter="close" id="pill-close">Մոտակա (&lt;2մ)</button>
+            <button class="filter-pill" data-filter="tech" id="pill-tech">Տեխ / IT</button>
+            <button class="filter-pill" data-filter="social" id="pill-social">Սոցիալական</button>
+          </div>
+
+          <!-- Cards List -->
+          <div class="people-cards-list" id="people-cards-list">
+            <!-- Dynamic cards rendered by JS -->
+          </div>
+        </section>
+
+        <!-- 4. CHAT VIEW -->
+        <section id="chat-view" style="display:none; flex:1;">
+          <!-- Managed by chat.js -->
+        </section>
+
+      </main>
+
+      <!-- ==========================================================================
+           MODALS
+           ========================================================================== -->
+
+      <!-- Person Profile Modal -->
+      <dialog id="profile-dialog" class="custom-dialog">
+        <div class="modal-content" id="profile-dialog-body">
+          <!-- Injected dynamically -->
+        </div>
+      </dialog>
+
+      <!-- User Settings Modal -->
+      <dialog id="settings-dialog" class="custom-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title" id="t-my-profile">Իմ Պրոֆիլը և Կարգավորումները</h3>
+            <button class="modal-close-btn" id="close-settings-btn">✕</button>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-label-wrap">
+              <span class="toggle-title" id="t-vis-title">Տեսանելի եմ ռադարում</span>
+              <span class="toggle-desc" id="t-vis-desc">Մոտակա մարդիկ կկարողանան գտնել Ձեզ</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-visible" checked />
+              <span class="slider-round"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-label-wrap">
+              <span class="toggle-title" id="t-stealth-title">Թաքնված ռեժիմ (Ghost)</span>
+              <span class="toggle-desc" id="t-stealth-desc">Դիտել մոտակայքը անտեսանելի</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-ghost" />
+              <span class="slider-round"></span>
+            </label>
+          </div>
+
+          <div class="settings-group">
+            <label class="section-label" id="t-my-name-label">Իմ Անունը</label>
+            <input type="text" id="my-name-input" class="settings-input" value="Դուք (Օգտատեր)" />
+          </div>
+
+          <div class="settings-group">
+            <label class="section-label" id="t-my-status-label">Կարգավիճակ / Կենսագրություն</label>
+            <input type="text" id="my-status-input" class="settings-input" value="Սուրճ եմ խմում Երևանում ☕" />
+          </div>
+
+          <div class="profile-modal-actions">
+            <button class="btn-chat-primary" id="save-settings-btn">Պահպանել Կարգավորումները</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Change Location Modal -->
+      <dialog id="location-dialog" class="custom-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">Փոխել Դիրքը</h3>
+            <button class="modal-close-btn" id="close-location-btn">✕</button>
+          </div>
+
+          <p style="font-size:13px; color:var(--tg-hint);" id="t-loc-prompt">
+            Կարող եք ընտրել Երևանի հայտնի վայրերից կամ ակտիվացնել Ձեր իրական GPS-ը:
+          </p>
+
+          <button class="btn-chat-primary" id="btn-use-live-gps" style="margin-bottom:6px;">
+            <span style="font-size:16px;">🛰️</span> Ակտիվացնել Իրական GPS-ը
+          </button>
+
+          <div class="section-label" style="margin-top:10px;">Երևանի Հայտնի Վայրեր</div>
+          <div class="location-presets-grid" id="presets-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </dialog>
+
+    </div>
+
+    <!-- Main Module Script -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
