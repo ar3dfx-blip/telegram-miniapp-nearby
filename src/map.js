@@ -1,20 +1,22 @@
-// Ultra-Lightweight Graphical Google Maps Engine (Clean Vector Roadmap)
+// OpenStreetMap Engine with Neumorphism 3D Minimalism Aesthetics
 import L from 'leaflet';
 import { soundManager } from './audio.js';
 import { formatDistance } from './mockData.js';
 
-export const GOOGLE_MAP_STYLES = {
-  'google-roadmap': {
-    name: 'Google Գրաֆիկական',
-    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-    maxZoom: 21,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+export const OPENSTREETMAP_STYLES = {
+  'osm-standard': {
+    name: 'OpenStreetMap',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    maxZoom: 19,
+    subdomains: ['a', 'b', 'c'],
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
   },
-  'google-terrain': {
-    name: 'Google Ռելիեֆ',
-    url: 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
-    maxZoom: 21,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  'osm-humanitarian': {
+    name: 'OpenStreetMap Դետալային',
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    maxZoom: 19,
+    subdomains: ['a', 'b', 'c'],
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
   }
 };
 
@@ -27,7 +29,7 @@ export class MapEngine {
     this.radiusCircle = null;
     this.markersGroup = null;
     this.currentCenter = null;
-    this.currentTheme = 'google-roadmap'; // Purely graphical, fast & lightweight
+    this.currentTheme = 'osm-standard'; // Official OpenStreetMap (https://www.openstreetmap.org/)
     this.tileLayer = null;
   }
 
@@ -39,19 +41,19 @@ export class MapEngine {
     const lat = this.currentCenter?.lat || 40.1776;
     const lng = this.currentCenter?.lng || 44.5126;
 
-    // Initialize Leaflet map with high zoom (19) for micro-proximity (0.5m - 10m)
+    // Initialize Leaflet map with zoom 18 for OpenStreetMap micro-proximity
     this.map = L.map(this.containerId, {
       center: [lat, lng],
-      zoom: 19,
-      maxZoom: 21,
+      zoom: 18,
+      maxZoom: 19,
       zoomControl: false,
-      attributionControl: false
+      attributionControl: true
     });
 
-    // Apply Real Google Maps Graphical tile layer
+    // Apply OpenStreetMap tile layer
     this.applyTileLayer(this.currentTheme);
 
-    // Zoom control at bottom-right
+    // Zoom control at bottom-right (styled with Neumorphic 3D buttons)
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
     // Markers layer group
@@ -63,25 +65,25 @@ export class MapEngine {
     }
   }
 
-  applyTileLayer(theme = 'google-roadmap') {
+  applyTileLayer(theme = 'osm-standard') {
     if (this.tileLayer && this.map) {
       this.map.removeLayer(this.tileLayer);
     }
     this.currentTheme = theme;
 
-    const style = GOOGLE_MAP_STYLES[theme] || GOOGLE_MAP_STYLES['google-roadmap'];
+    const style = OPENSTREETMAP_STYLES[theme] || OPENSTREETMAP_STYLES['osm-standard'];
 
     this.tileLayer = L.tileLayer(style.url, {
-      maxZoom: style.maxZoom || 21,
-      subdomains: style.subdomains || ['mt0', 'mt1', 'mt2', 'mt3'],
+      maxZoom: style.maxZoom || 19,
+      subdomains: style.subdomains || ['a', 'b', 'c'],
       updateWhenIdle: true,
       keepBuffer: 2,
-      attribution: '© Google Maps'
+      attribution: style.attribution
     }).addTo(this.map);
   }
 
   toggleTheme() {
-    const modes = ['google-roadmap', 'google-terrain'];
+    const modes = ['osm-standard', 'osm-humanitarian'];
     const currentIndex = modes.indexOf(this.currentTheme);
     const nextIndex = (currentIndex + 1) % modes.length;
     const nextTheme = modes[nextIndex];
@@ -90,7 +92,7 @@ export class MapEngine {
   }
 
   getThemeName(theme) {
-    return GOOGLE_MAP_STYLES[theme]?.name || 'Google Maps';
+    return OPENSTREETMAP_STYLES[theme]?.name || 'OpenStreetMap';
   }
 
   setUserLocation(coords, radiusMeters) {
@@ -196,7 +198,7 @@ export class MapEngine {
 
   recenter() {
     if (this.map && this.currentCenter) {
-      this.map.flyTo([this.currentCenter.lat, this.currentCenter.lng], 19, {
+      this.map.flyTo([this.currentCenter.lat, this.currentCenter.lng], 18, {
         animate: true,
         duration: 0.8
       });

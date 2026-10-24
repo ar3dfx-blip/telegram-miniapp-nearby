@@ -59,7 +59,7 @@ export const translations = {
     contactSent: "Ձեր ողջույնն ու կոնտակտը ուղարկվեց!",
     gpsLive: "Իմ իրական GPS դիրքը",
     gpsRefreshLabel: "Live GPS",
-    tgMapBadge: "Google Գրաֆիկական (Թեթև)",
+    tgMapBadge: "OpenStreetMap (Live)",
     tgDrawerTitle: "Մոտակա Մարդիկ (Live)",
     tgShareLive: "Կիսվել Իմ Live Տեղադրությամբ"
   },
@@ -122,7 +122,7 @@ export const translations = {
     contactSent: "Greeting and contact shared!",
     gpsLive: "My live GPS location",
     gpsRefreshLabel: "Live GPS",
-    tgMapBadge: "Google Graphic (Fast)",
+    tgMapBadge: "OpenStreetMap (Live)",
     tgDrawerTitle: "People Nearby (Live)",
     tgShareLive: "Share My Live Location"
   },
@@ -184,7 +184,7 @@ export const translations = {
     contactSent: "Приветствие и контакт отправлены!",
     gpsLive: "Мой реальный GPS",
     gpsRefreshLabel: "Live GPS",
-    tgMapBadge: "Google Графика (Легкая)",
+    tgMapBadge: "OpenStreetMap (Live)",
     tgDrawerTitle: "Люди Рядом (Live)",
     tgShareLive: "Поделиться Геопозицией Live"
   }
