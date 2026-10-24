@@ -11,13 +11,18 @@
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta property="og:image" content="./logo.png" />
+    <meta name="twitter:image" content="./logo.png" />
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script type="module" crossorigin src="./assets/index-DHHg8qOk.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BPKLeeAe.css">
+    <script type="module" crossorigin src="./assets/index-DcxxDwxy.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DLVWvvGC.css">
   </head>
   <body>
     <div id="app">
@@ -27,11 +32,7 @@
           <div class="app-branding">
             <div class="brand-icon-wrapper">
               <div class="brand-pulse"></div>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
-                <path d="M2 12h20"/>
-              </svg>
+              <img src="./logo.png" alt="Մոտակա Կապ" class="app-brand-logo-img" />
             </div>
             <div>
               <h1 class="brand-title" id="t-app-title">Մոտակա Կապ</h1>
@@ -236,9 +237,10 @@
       <!-- User Settings Modal -->
       <dialog id="settings-dialog" class="custom-dialog">
         <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title" id="t-my-profile">Իմ Պրոֆիլը և Կարգավորումները</h3>
-            <button class="modal-close-btn" id="close-settings-btn">✕</button>
+          <div class="modal-header" style="display:flex; align-items:center; gap:10px;">
+            <img src="./logo.png" alt="Մոտակա Կապ" style="width:34px; height:34px; border-radius:10px; object-fit:cover; box-shadow:0 2px 8px rgba(255,140,105,0.4);" />
+            <h3 class="modal-title" id="t-my-profile" style="margin:0;">Իմ Պրոֆիլը և Կարգավորումները</h3>
+            <button class="modal-close-btn" id="close-settings-btn" style="margin-left:auto;">✕</button>
           </div>
 
           <div class="toggle-row">
