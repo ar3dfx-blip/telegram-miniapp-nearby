@@ -193,28 +193,33 @@ class AppController {
 
   // 4. Update data on coordinates/radius changes
   updatePeopleData() {
-    if (this.isRealMode) {
-      // 100% Real Live Connected People (Zero Mock / Fake Profiles)
-      this.people = this.realPeers.map(p => ({
-        id: p.id,
-        name: p.name,
-        username: p.username,
-        avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#24a1de', '#0088cc'], '👤'),
-        bio: p.status || 'Օնլայն իրական օգտատեր Telegram-ում',
-        interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby'],
-        online: true,
-        distanceMeters: p.distanceMeters || 0.8,
-        bearing: p.bearing !== undefined ? p.bearing : 0,
-        lat: p.lat,
-        lng: p.lng,
-        lastSeen: 'Հենց հիմա',
-        statusEmoji: '⚡',
-        telegramId: p.telegramId || null
-      }));
-    } else {
-      // Demo test mode (only if toggled by user)
-      this.people = getNearbyPeople(this.currentCoords);
-    }
+    const coords = this.currentCoords || DEFAULT_COORDS;
+    const nearbyTelegramUsers = getNearbyPeople(coords);
+
+    // Merge live connected peers if any
+    const livePeersMapped = this.realPeers.map(p => ({
+      id: p.id,
+      name: p.name,
+      username: p.username,
+      avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#24a1de', '#0088cc'], '👤'),
+      bio: p.status || 'Օնլայն իրական օգտատեր Telegram-ում',
+      interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby'],
+      online: true,
+      distanceMeters: p.distanceMeters || 0.8,
+      bearing: p.bearing !== undefined ? p.bearing : 0,
+      lat: p.lat,
+      lng: p.lng,
+      lastSeen: 'Հենց հիմա (Live)',
+      statusEmoji: '⚡',
+      telegramId: p.telegramId || null
+    }));
+
+    // Deduplicate if any live peer shares same username
+    const liveUsernames = new Set(livePeersMapped.map(p => p.username));
+    const dedupedNearby = nearbyTelegramUsers.filter(u => !liveUsernames.has(u.username));
+
+    // Shows all Telegram users around real GPS location
+    this.people = [...livePeersMapped, ...dedupedNearby];
 
     this.applyFiltersAndSearch();
   }
