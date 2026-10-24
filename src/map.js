@@ -1,6 +1,7 @@
 // Ultra-Lightweight Graphical Google Maps Engine (Clean Vector Roadmap)
 import L from 'leaflet';
 import { soundManager } from './audio.js';
+import { formatDistance } from './mockData.js';
 
 export const GOOGLE_MAP_STYLES = {
   'google-roadmap': {
@@ -135,14 +136,18 @@ export class MapEngine {
     this.userMarker = L.marker([coords.lat, coords.lng], { icon: userIcon }).addTo(this.map);
   }
 
-  setPeople(people, maxRadius = 10) {
+  setLanguage(lang) {
+    this.lang = lang;
+  }
+
+  setPeople(people, maxRadius = 10, isSearching = false) {
     if (!this.markersGroup) return;
     this.markersGroup.clearLayers();
 
     people.forEach(person => {
-      if (person.distanceMeters > maxRadius) return;
+      if (!isSearching && person.distanceMeters > maxRadius) return;
 
-      const dStr = (Number.isInteger(person.distanceMeters) ? person.distanceMeters : person.distanceMeters.toFixed(1)) + 'մ';
+      const dStr = formatDistance(person.distanceMeters, this.lang || 'hy');
 
       // Telegram styled peer marker with avatar, online dot, and chat-bubble distance tag
       const markerHtml = `

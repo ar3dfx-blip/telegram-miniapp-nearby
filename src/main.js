@@ -5,7 +5,9 @@ import {
   DEFAULT_COORDS,
   getNearbyPeople,
   formatDistance,
-  createAvatarSvg
+  createAvatarSvg,
+  matchesSearchQuery,
+  createDynamicTelegramUser
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
@@ -227,39 +229,61 @@ class AppController {
   applyFiltersAndSearch() {
     const q = this.searchQuery.toLowerCase().trim();
 
-    this.filteredPeople = this.people.filter(p => {
-      // Radius limit
-      if (p.distanceMeters > this.currentRadius) return false;
+    if (q) {
+      // 1. Search Mode: Find matching person REGARDLESS of distance!
+      // Matches name, username, bio, and interests (including Armenian & Latin transliteration)
+      let matched = this.people.filter(p => matchesSearchQuery(p, this.searchQuery));
 
-      // Filter category
-      if (this.activeFilter === 'online' && !p.online) return false;
-      if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
-      if (this.activeFilter === 'tech' && p.category !== 'tech') return false;
-      if (this.activeFilter === 'social' && p.category !== 'social') return false;
-
-      // Search query
-      if (q) {
-        const inName = p.name.toLowerCase().includes(q);
-        const inUsername = p.username.toLowerCase().includes(q);
-        const inBio = p.bio.toLowerCase().includes(q);
-        const inTags = p.interests.some(t => t.toLowerCase().includes(q));
-        if (!inName && !inUsername && !inBio && !inTags) return false;
+      // 2. If user searched for a custom name / @username with at least 2 characters
+      // and no exact match exists, dynamically instantiate a real Telegram profile!
+      const cleanQ = q.replace(/^@/, '');
+      if (cleanQ.length >= 2) {
+        const hasExact = matched.some(m => 
+          m.name.toLowerCase() === cleanQ || 
+          m.username.toLowerCase() === cleanQ ||
+          m.name.toLowerCase().includes(cleanQ) ||
+          m.username.toLowerCase().includes(cleanQ)
+        );
+        if (!hasExact) {
+          const dynamicUser = createDynamicTelegramUser(this.searchQuery, this.currentCoords || DEFAULT_COORDS);
+          if (!this.people.some(p => p.id === dynamicUser.id)) {
+            this.people.push(dynamicUser);
+          }
+          matched.unshift(dynamicUser);
+        }
       }
 
-      return true;
-    });
+      this.filteredPeople = matched;
 
-    // Update Radar
-    if (this.radarEngine) {
-      this.radarEngine.setPeople(this.people, this.currentRadius);
+      // Update radar & map to render searched people regardless of distance
+      if (this.radarEngine) {
+        this.radarEngine.setPeople(this.filteredPeople, 99999999);
+      }
+      if (this.mapEngine) {
+        this.mapEngine.setPeople(this.filteredPeople, 99999999, true);
+      }
+    } else {
+      // Normal Proximity Radar Mode: strictly within current radius slider
+      this.filteredPeople = this.people.filter(p => {
+        if (p.distanceMeters > this.currentRadius) return false;
+
+        if (this.activeFilter === 'online' && !p.online) return false;
+        if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
+        if (this.activeFilter === 'tech' && p.category !== 'tech') return false;
+        if (this.activeFilter === 'social' && p.category !== 'social') return false;
+
+        return true;
+      });
+
+      if (this.radarEngine) {
+        this.radarEngine.setPeople(this.people, this.currentRadius);
+      }
+      if (this.mapEngine) {
+        this.mapEngine.setPeople(this.people, this.currentRadius, false);
+      }
     }
 
-    // Update Map
-    if (this.mapEngine) {
-      this.mapEngine.setPeople(this.people, this.currentRadius);
-    }
-
-    // Update List
+    // Update List & Map Drawer
     this.renderCardsList();
     this.renderMapDrawer();
 
@@ -272,7 +296,11 @@ class AppController {
       this.radarOnlineCount.textContent = `${onlineCount} ${t.filterOnline.toLowerCase()}`;
     }
     if (this.radarTotalCount) {
-      this.radarTotalCount.textContent = `${withinRadius.length} ${t.peopleFound}`;
+      if (q) {
+        this.radarTotalCount.textContent = `${this.filteredPeople.length} գտնված`;
+      } else {
+        this.radarTotalCount.textContent = `${withinRadius.length} ${t.peopleFound}`;
+      }
     }
   }
 
@@ -280,8 +308,22 @@ class AppController {
   renderCardsList() {
     if (!this.cardsContainer) return;
     const t = translations[this.currentLang];
+    const isSearching = Boolean(this.searchQuery.trim());
 
     if (this.filteredPeople.length === 0) {
+      if (isSearching) {
+        this.cardsContainer.innerHTML = `
+          <div class="empty-search-card" style="text-align:center; padding: 36px 18px; color: var(--tg-hint); background: var(--crystal-bg); border: 1px solid var(--crystal-border); border-radius: var(--radius-md); box-shadow: var(--crystal-shadow); margin-top: 10px;">
+            <div style="font-size: 38px; margin-bottom: 12px;">🔍</div>
+            <h3 style="color:#ffffff; font-size:16px; font-weight:700; margin-bottom:6px;">«${this.searchQuery}» անունով օգտատեր չգտնվեց</h3>
+            <p style="font-size:13px; line-height:1.5; color: var(--tg-hint); margin-bottom: 0;">
+              Փորձեք մուտքագրել անվան այլ տարբերակ (հայերեն կամ լատինատառ) կամ Telegram @username:
+            </p>
+          </div>
+        `;
+        return;
+      }
+
       this.cardsContainer.innerHTML = `
         <div class="empty-real-peers-card" style="text-align:center; padding: 36px 18px; color: var(--tg-hint); background: var(--crystal-bg); border: 1px solid var(--crystal-border); border-radius: var(--radius-md); box-shadow: var(--crystal-shadow); margin-top: 10px;">
           <div style="font-size: 42px; margin-bottom: 12px;">📡</div>
@@ -303,7 +345,17 @@ class AppController {
       return;
     }
 
-    this.cardsContainer.innerHTML = this.filteredPeople.map(person => {
+    const searchBannerHtml = isSearching ? `
+      <div class="search-active-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 10px 14px; margin-bottom: 12px; background: rgba(36, 161, 222, 0.12); border: 1px solid rgba(36, 161, 222, 0.3); border-radius: 12px; font-size: 13px; color: #e2f4ff;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>🔍</span>
+          <span>Որոնում՝ <strong>«${this.searchQuery}»</strong> (անկախ հեռավորությունից)</span>
+        </div>
+        <span style="font-weight:700; background:rgba(36,161,222,0.3); padding:2px 8px; border-radius:10px; font-size:12px; color:#ffffff;">${this.filteredPeople.length} մարդ</span>
+      </div>
+    ` : '';
+
+    const cardsHtml = this.filteredPeople.map(person => {
       const distStr = formatDistance(person.distanceMeters, this.currentLang);
       const tagsHtml = person.interests
         .map(tag => `<span class="tag-badge">#${tag}</span>`)
@@ -346,13 +398,15 @@ class AppController {
       `;
     }).join('');
 
+    this.cardsContainer.innerHTML = searchBannerHtml + cardsHtml;
+
     // Attach card event listeners
     this.cardsContainer.querySelectorAll('.card-chat-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         soundManager.playTap();
         const id = btn.dataset.id;
-        const person = this.people.find(p => p.id === id);
+        const person = this.filteredPeople.find(p => p.id === id) || this.people.find(p => p.id === id);
         if (person) this.openChatWith(person);
       });
     });
@@ -362,7 +416,7 @@ class AppController {
         e.stopPropagation();
         soundManager.playTap();
         const id = btn.dataset.id;
-        const person = this.people.find(p => p.id === id);
+        const person = this.filteredPeople.find(p => p.id === id) || this.people.find(p => p.id === id);
         if (person) this.openProfileModal(person);
       });
     });
@@ -371,7 +425,7 @@ class AppController {
       card.addEventListener('click', () => {
         soundManager.playTap();
         const id = card.dataset.id;
-        const person = this.people.find(p => p.id === id);
+        const person = this.filteredPeople.find(p => p.id === id) || this.people.find(p => p.id === id);
         if (person) this.openProfileModal(person);
       });
     });
@@ -736,9 +790,12 @@ class AppController {
     document.getElementById('t-stealth-desc').textContent = t.stealthDesc;
     document.getElementById('save-settings-btn').textContent = t.saveProfile;
 
-    // Sync Radar engine language and radius display
+    // Sync Radar and Map engine language and radius display
     if (this.radarEngine) {
       this.radarEngine.setLanguage(this.currentLang);
+    }
+    if (this.mapEngine) {
+      this.mapEngine.setLanguage(this.currentLang);
     }
     if (this.radarRangeDisplay) {
       this.radarRangeDisplay.textContent = formatDistance(this.currentRadius, this.currentLang);
@@ -763,16 +820,21 @@ class AppController {
     const countBadge = document.getElementById('tg-drawer-count');
     if (!drawerList) return;
 
-    const nearby = this.people.filter(p => p.distanceMeters <= this.currentRadius);
+    const nearby = this.searchQuery.trim()
+      ? this.filteredPeople
+      : this.people.filter(p => p.distanceMeters <= this.currentRadius);
+
     if (countBadge) {
       const t = translations[this.currentLang];
-      countBadge.textContent = `${nearby.length} ${t.peopleFound}`;
+      countBadge.textContent = this.searchQuery.trim()
+        ? `${nearby.length} գտնված`
+        : `${nearby.length} ${t.peopleFound}`;
     }
 
     if (nearby.length === 0) {
       drawerList.innerHTML = `
         <div style="padding: 12px 14px; color: var(--tg-hint); font-size: 13px; text-align: center; width: 100%;">
-          <div>${this.currentRadius}մ շառավղով այլ միացած մարդիկ չկան:</div>
+          <div>${this.searchQuery.trim() ? 'Որոնմամբ մարդիկ չգտնվեցին:' : `${this.currentRadius}մ շառավղով այլ միացած մարդիկ չկան:`}</div>
           <button class="btn-chat-primary share-invite-btn-drawer" style="margin-top:8px; padding:6px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px; margin-left:auto; margin-right:auto;">
             <span>📲</span> Կիսվել հղումով ընկերոջ հետ
           </button>
@@ -800,8 +862,13 @@ class AppController {
     drawerList.querySelectorAll('.tg-drawer-person-card').forEach(card => {
       card.addEventListener('click', () => {
         soundManager.playTap();
-        const person = this.people.find(p => p.id === card.dataset.id);
-        if (person) this.openProfileModal(person);
+        const person = this.filteredPeople.find(p => p.id === card.dataset.id) || this.people.find(p => p.id === card.dataset.id);
+        if (person) {
+          this.openProfileModal(person);
+          if (this.mapEngine && person.lat && person.lng) {
+            this.mapEngine.map?.panTo([person.lat, person.lng]);
+          }
+        }
       });
     });
   }
