@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script type="module" crossorigin src="./assets/index-Bt1fGhLz.js"></script>
+    <script type="module" crossorigin src="./assets/index-DWpueI18.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BPKLeeAe.css">
   </head>
   <body>
@@ -55,13 +55,18 @@
           </div>
         </div>
 
-        <!-- Location banner -->
-        <div class="location-banner">
+        <!-- Live GPS Location Banner (Real GPS Only) -->
+        <div class="location-banner live-gps-banner">
           <div class="location-info">
-            <span id="loc-pin-icon">📍</span>
-            <span id="current-location-text">Երևան, Հանրապետության Հրապարակ</span>
+            <span class="tg-live-dot" style="margin-right: 6px;"></span>
+            <span id="current-location-text">📍 Որոշվում է իրական GPS-ը...</span>
           </div>
-          <button class="location-change-btn" id="open-loc-modal-btn">Փոխել ▾</button>
+          <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել իրական GPS-ը" style="display:flex; align-items:center; gap:5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            <span id="t-gps-refresh-label">Live GPS</span>
+          </button>
         </div>
       </header>
 
@@ -281,29 +286,6 @@
 
           <div class="profile-modal-actions">
             <button class="btn-chat-primary" id="save-settings-btn">Պահպանել Կարգավորումները</button>
-          </div>
-        </div>
-      </dialog>
-
-      <!-- Change Location Modal -->
-      <dialog id="location-dialog" class="custom-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title">Փոխել Դիրքը</h3>
-            <button class="modal-close-btn" id="close-location-btn">✕</button>
-          </div>
-
-          <p style="font-size:13px; color:var(--tg-hint);" id="t-loc-prompt">
-            Կարող եք ընտրել Երևանի հայտնի վայրերից կամ ակտիվացնել Ձեր իրական GPS-ը:
-          </p>
-
-          <button class="btn-chat-primary" id="btn-use-live-gps" style="margin-bottom:6px;">
-            <span style="font-size:16px;">🛰️</span> Ակտիվացնել Իրական GPS-ը
-          </button>
-
-          <div class="section-label" style="margin-top:10px;">Երևանի Հայտնի Վայրեր</div>
-          <div class="location-presets-grid" id="presets-grid">
-            <!-- Rendered by JS -->
           </div>
         </div>
       </dialog>
