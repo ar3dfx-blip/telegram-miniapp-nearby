@@ -733,6 +733,7 @@ class AppController {
 
     document.getElementById('current-lang-code').textContent = flagMap[this.currentLang] || '🇦🇲';
     document.getElementById('t-app-title').textContent = t.appTitle;
+    document.title = `${t.appTitle} | Telegram Mini App`;
     const subEl = document.getElementById('t-app-subtitle');
     if (subEl) subEl.textContent = t.appSubtitle;
     document.getElementById('t-tab-radar').textContent = t.tabRadar;
@@ -832,14 +833,17 @@ class AppController {
 
   shareAppWithFriends() {
     const shareUrl = "https://ar3dfx-blip.github.io/telegram-miniapp-nearby/";
-    const text = "Միացեք ինձ Telegram Mini App-ում՝ մոտակա կապ հաստատելու համար (0.5մ - 100մ):";
+    const t = translations[this.currentLang];
+    const text = this.currentLang === 'hy'
+      ? "Միացեք ինձ «Քիփս» (Qips) հավելվածում՝ մոտակա կապ հաստատելու համար (0.5մ - 100մ) 📶"
+      : "Join me on Qips Telegram Mini App (0.5m - 100m) 📶";
     const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
 
     const tg = window.Telegram?.WebApp;
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(tgShareUrl);
     } else if (navigator.share) {
-      navigator.share({ title: 'Մոտակա Կապ', text, url: shareUrl }).catch(() => {});
+      navigator.share({ title: t.appTitle, text, url: shareUrl }).catch(() => {});
     } else {
       window.open(tgShareUrl, '_blank');
     }

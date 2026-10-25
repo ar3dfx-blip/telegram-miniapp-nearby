@@ -29,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
-    app: 'Telegram Mini App - Nearby Connect',
+    app: 'Telegram Mini App - Qips (Քիփս)',
     activePeersCount: connectedPeers.size,
     timestamp: new Date().toISOString()
   });

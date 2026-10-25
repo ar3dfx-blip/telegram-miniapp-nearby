@@ -1,7 +1,7 @@
 // Multilingual support: Armenian (Հայերեն), English, Russian
 export const translations = {
   hy: {
-    appTitle: "Մոտակա Կապ",
+    appTitle: "Քիփս",
     appSubtitle: "Գտեք մոտակայքում գտնվող մարդկանց և գրեք նրանց",
     tabRadar: "Ռադար",
     tabMap: "Քարտեզ",
@@ -65,7 +65,7 @@ export const translations = {
     wifiTag: "WiFi"
   },
   en: {
-    appTitle: "Nearby Connect",
+    appTitle: "Qips",
     appSubtitle: "Discover people nearby and chat with them",
     tabRadar: "Radar",
     tabMap: "Map",

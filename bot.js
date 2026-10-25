@@ -78,13 +78,13 @@ async function startBot() {
             if (msg.text.startsWith('/start')) {
               await telegramRequest('sendMessage', {
                 chat_id: chatId,
-                text: `👋 Ողջույն, ${firstName}!\n\nԲարի գալուստ **Մոտակա Կապ (People Nearby)** Telegram Mini App:\n\n📡 Ռադարով տեսեք, թե ովքեր են կանգնած կամ զբոսնում Ձեր մոտակայքում (10մ-ից մինչև 5կմ),\n💬 Դիտեք նրանց պրոֆիլները,\n🚀 Եվ գրեք նրանց ուղիղ հաղորդագրություն:\n\nՍեղմեք ներքևի կոճակը հավելվածը բացելու համար 👇`,
+                text: `👋 Ողջույն, ${firstName}!\n\nԲարի գալուստ **Քիփս (Qips)** Telegram Mini App:\n\n📡 Ռադարով տեսեք, թե ովքեր են Ձեր մոտակայքում,\n💬 Դիտեք նրանց պրոֆիլները,\n🚀 Եվ գրեք նրանց ուղիղ հաղորդագրություն:\n\nՍեղմեք ներքևի կոճակը հավելվածը բացելու համար 👇`,
                 parse_mode: 'Markdown',
                 reply_markup: {
                   inline_keyboard: [
                     [
                       {
-                        text: '🚀 Բացել Մոտակա Կապ (People Nearby)',
+                        text: '🚀 Բացել Քիփս (Qips)',
                         web_app: { url: WEBAPP_URL }
                       }
                     ],
