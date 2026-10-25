@@ -1128,6 +1128,14 @@ canvas#radar-canvas {
 /* ==========================================================================
    3. List View Section & Cards (Soft 3D Diffused Cards)
    ========================================================================== */
+.radar-list-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 6px;
+}
+
 .list-view-container {
   display: flex;
   flex-direction: column;

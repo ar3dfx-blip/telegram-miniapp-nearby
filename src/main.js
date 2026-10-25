@@ -422,7 +422,29 @@ class AppController {
 
   // 6. View Tabs Switching
   switchTab(tabName) {
-    if (this.activeTab === tabName) return;
+    if (tabName === 'list') {
+      soundManager.triggerHaptic('light');
+      if (this.activeTab !== 'radar') {
+        this.switchTab('radar');
+      }
+      setTimeout(() => {
+        const listSection = document.getElementById('radar-list-section');
+        if (listSection) {
+          listSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+      this.tabButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === 'list');
+      });
+      return;
+    }
+
+    if (this.activeTab === tabName) {
+      if (tabName === 'radar') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
 
     soundManager.triggerHaptic('light');
 
@@ -450,10 +472,14 @@ class AppController {
     // Show/hide view panels
     Object.keys(this.viewPanels).forEach(key => {
       if (this.viewPanels[key]) {
-        this.viewPanels[key].style.display = key === tabName ? (key === 'chat' ? 'flex' : 'flex') : 'none';
+        this.viewPanels[key].style.display = key === tabName ? 'flex' : 'none';
       }
     });
 
+    // If switching to radar, scroll to top
+    if (tabName === 'radar') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // Hide floating footer navbar when in full 1-on-1 chat
     if (this.mainNavTabs) {
@@ -595,6 +621,22 @@ class AppController {
         this.switchTab(btn.dataset.tab);
       });
     });
+
+    // Scroll listener on Radar view to sync active footer tab (Radar vs List)
+    window.addEventListener('scroll', () => {
+      if (this.activeTab !== 'radar') return;
+      const listSection = document.getElementById('radar-list-section');
+      if (!listSection) return;
+      const rect = listSection.getBoundingClientRect();
+      const inList = rect.top <= window.innerHeight * 0.45;
+      this.tabButtons.forEach(btn => {
+        if (btn.dataset.tab === 'list') {
+          btn.classList.toggle('active', inList);
+        } else if (btn.dataset.tab === 'radar') {
+          btn.classList.toggle('active', !inList);
+        }
+      });
+    }, { passive: true });
 
     // Radar Radius Slider
     if (this.radarSlider) {
