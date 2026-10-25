@@ -521,29 +521,27 @@ canvas#radar-canvas {
   -webkit-user-select: none !important;
 }
 
-/* Leaflet Mobile GPU & Touch Stabilization */
-.leaflet-container {
-  touch-action: pan-x pan-y pinch-zoom !important;
-  overscroll-behavior: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
+.maplibregl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none !important;
 }
 
-/* Neumorphic 3D Minimalist Map Palette Calibration (210° Cool Slate) */
-.leaflet-tile-pane {
-  filter: grayscale(0.95) brightness(1.06) contrast(0.88) sepia(0.15) hue-rotate(175deg);
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+.maplibregl-map {
+  font-family: var(--font-family) !important;
 }
 
-.leaflet-tile {
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+.maplibregl-popup-content {
+  background: var(--bg-secondary) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--neu-flat-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  padding: 8px 12px !important;
+  color: var(--text-dark) !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--bg-secondary) !important;
 }
 
 /* Neumorphic 3D Leaflet Zoom Controls */

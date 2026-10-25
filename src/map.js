@@ -1,17 +1,34 @@
-// OpenStreetMap Engine with Neumorphism 3D Minimalism Aesthetics
-import L from 'leaflet';
+import * as maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
+
+maplibregl.setWorkerUrl(workerUrl);
 import { soundManager } from './audio.js';
 import { formatDistance } from './mockData.js';
 
-export const OPENSTREETMAP_STYLES = {
-  'osm-standard': {
-    name: 'OpenStreetMap',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    maxZoom: 19,
-    subdomains: ['a', 'b', 'c'],
-    attribution: '© OpenStreetMap'
+function createGeoJsonCircle(center, radiusMeters, points = 64) {
+  if (!center || typeof center.lat !== 'number' || typeof center.lng !== 'number') {
+    return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } };
   }
-};
+  const km = (radiusMeters || 50) / 1000;
+  const ret = [];
+  const distanceX = km / (111.320 * Math.cos((center.lat * Math.PI) / 180));
+  const distanceY = km / 110.574;
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    ret.push([center.lng + x, center.lat + y]);
+  }
+  ret.push(ret[0]);
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [ret]
+    }
+  };
+}
 
 export class MapEngine {
   constructor(mapContainerId, onSelectPerson) {
@@ -19,122 +36,123 @@ export class MapEngine {
     this.onSelectPerson = onSelectPerson;
     this.map = null;
     this.userMarker = null;
-    this.radiusCircle = null;
-    this.markersGroup = null;
+    this.peerMarkers = new Map();
     this.currentCenter = null;
-    this.currentTheme = 'osm-standard';
-    this.tileLayer = null;
+    this.currentRadius = 50;
+    this.isLoaded = false;
+    this.pendingPeople = null;
+    this.lang = 'hy';
   }
 
   init(centerCoords, initialRadius = 50) {
     this.currentCenter = centerCoords || { lat: 40.1776, lng: 44.5126 };
+    this.currentRadius = initialRadius;
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
     const lat = this.currentCenter?.lat || 40.1776;
     const lng = this.currentCenter?.lng || 44.5126;
 
-    // Initialize Leaflet map with mobile touch and GPU stabilization
-    this.map = L.map(this.containerId, {
-      center: [lat, lng],
-      zoom: 18,
-      maxZoom: 19,
-      zoomControl: false,
-      attributionControl: false,
-      tap: false,                  // Fixes Leaflet mobile tap gesture conflict that causes touch jitter
-      touchZoom: true,
-      bounceAtZoomLimits: false,   // Prevents elastic rubber-banding jitter at zoom limits
-      wheelDebounceTime: 40,
-      inertia: true,
-      inertiaDeceleration: 3000,
-      inertiaMaxSpeed: 1500,
-      fadeAnimation: false,        // Tile fade during pan/zoom on mobile causes flashing/stutter
-      zoomAnimation: true,
-      markerZoomAnimation: true
+    this.map = new maplibregl.Map({
+      container: this.containerId,
+      style: './map-style-neumorphic.json',
+      center: [lng, lat],
+      zoom: 17.2,
+      maxZoom: 19.5,
+      pitchWithRotate: false,
+      dragRotate: false,
+      touchPitch: false,
+      attributionControl: false
     });
 
-    // Apply OpenStreetMap tile layer
-    this.applyTileLayer(this.currentTheme);
+    // Provide Leaflet-compatible panTo wrapper so caller can pass [lat, lng] or [lng, lat]
+    const origPanTo = this.map.panTo.bind(this.map);
+    this.map.panTo = (coords, options) => {
+      if (Array.isArray(coords) && coords.length === 2) {
+        // If passed as [lat, lng] (in Armenia lat ~ 40, lng ~ 44)
+        if (coords[0] < coords[1]) {
+          return origPanTo([coords[1], coords[0]], options);
+        }
+      }
+      return origPanTo(coords, options);
+    };
 
-    // Markers layer group
-    this.markersGroup = L.layerGroup().addTo(this.map);
+    this.map.on('load', () => {
+      this.isLoaded = true;
 
-    // User marker with Telegram live location pulsing beacon
-    if (this.currentCenter && typeof this.currentCenter.lat === 'number') {
-      this.setUserLocation(this.currentCenter, initialRadius);
-    }
-  }
+      // Add search radius circle GeoJSON layer
+      try {
+        if (!this.map.getSource('search-radius')) {
+          this.map.addSource('search-radius', {
+            type: 'geojson',
+            data: createGeoJsonCircle(this.currentCenter, this.currentRadius)
+          });
 
-  applyTileLayer(theme = 'osm-standard') {
-    if (this.tileLayer && this.map) {
-      this.map.removeLayer(this.tileLayer);
-    }
-    this.currentTheme = theme;
+          this.map.addLayer({
+            id: 'search-radius-fill',
+            type: 'fill',
+            source: 'search-radius',
+            paint: {
+              'fill-color': '#7c3aed',
+              'fill-opacity': 0.08
+            }
+          });
 
-    const style = OPENSTREETMAP_STYLES[theme] || OPENSTREETMAP_STYLES['osm-standard'];
+          this.map.addLayer({
+            id: 'search-radius-line',
+            type: 'line',
+            source: 'search-radius',
+            paint: {
+              'line-color': '#7c3aed',
+              'line-width': 1.5,
+              'line-dasharray': [3, 3]
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Radius layer init note:', err);
+      }
 
-    this.tileLayer = L.tileLayer(style.url, {
-      maxZoom: style.maxZoom || 19,
-      subdomains: style.subdomains || ['a', 'b', 'c'],
-      updateWhenIdle: true,
-      keepBuffer: 2,
-      attribution: style.attribution
-    }).addTo(this.map);
-  }
+      if (this.currentCenter) {
+        this.setUserLocation(this.currentCenter, this.currentRadius);
+      }
 
-  toggleTheme() {
-    const modes = ['carto-positron', 'carto-voyager', 'osm-standard'];
-    const currentIndex = modes.indexOf(this.currentTheme);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    const nextTheme = modes[nextIndex];
-    this.applyTileLayer(nextTheme);
-    return nextTheme;
-  }
-
-  getThemeName(theme) {
-    return OPENSTREETMAP_STYLES[theme]?.name || 'OpenStreetMap';
+      if (this.pendingPeople) {
+        this.setPeople(this.pendingPeople.people, this.pendingPeople.maxRadius, this.pendingPeople.isSearching);
+        this.pendingPeople = null;
+      }
+    });
   }
 
   setUserLocation(coords, radiusMeters) {
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
     this.currentCenter = coords;
+    this.currentRadius = radiusMeters || this.currentRadius;
+
     if (!this.map) return;
 
-    // Smoothly update radius circle without tearing down DOM elements
-    if (this.radiusCircle) {
-      this.radiusCircle.setLatLng([coords.lat, coords.lng]);
-      this.radiusCircle.setRadius(radiusMeters);
-    } else {
-      this.radiusCircle = L.circle([coords.lat, coords.lng], {
-        radius: radiusMeters,
-        color: '#7c3aed',
-        fillColor: '#8b5cf6',
-        fillOpacity: 0.08,
-        weight: 1.5,
-        dashArray: '5, 8'
-      }).addTo(this.map);
+    // Update radius circle GeoJSON data
+    if (this.isLoaded && this.map.getSource('search-radius')) {
+      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.currentCenter, this.currentRadius));
     }
 
-    // Smoothly update user marker position without tearing down DOM elements
+    // Update user marker position without DOM tearing
     if (this.userMarker) {
-      this.userMarker.setLatLng([coords.lat, coords.lng]);
+      this.userMarker.setLngLat([coords.lng, coords.lat]);
     } else {
-      const userIcon = L.divIcon({
-        className: 'tg-live-beacon-icon',
-        html: `
-          <div class="tg-live-beacon">
-            <div class="tg-beacon-ring"></div>
-            <div class="tg-beacon-ring tg-ring-delayed"></div>
-            <div class="tg-beacon-core">
-              <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
-            </div>
-          </div>
-        `,
-        iconSize: [44, 44],
-        iconAnchor: [22, 22]
-      });
+      const beaconEl = document.createElement('div');
+      beaconEl.className = 'tg-live-beacon';
+      beaconEl.innerHTML = `
+        <div class="tg-beacon-ring"></div>
+        <div class="tg-beacon-ring tg-ring-delayed"></div>
+        <div class="tg-beacon-core">
+          <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
+        </div>
+      `;
 
-      this.userMarker = L.marker([coords.lat, coords.lng], { icon: userIcon }).addTo(this.map);
+      this.userMarker = new maplibregl.Marker({ element: beaconEl, anchor: 'center' })
+        .setLngLat([coords.lng, coords.lat])
+        .addTo(this.map);
     }
   }
 
@@ -142,67 +160,73 @@ export class MapEngine {
     this.lang = lang;
   }
 
-  setPeople(people, maxRadius = 10, isSearching = false) {
-    if (!this.markersGroup) return;
-    this.markersGroup.clearLayers();
+  setPeople(people = [], maxRadius = 50, isSearching = false) {
+    if (!this.map) return;
+    if (!this.isLoaded) {
+      this.pendingPeople = { people, maxRadius, isSearching };
+      return;
+    }
+
+    // Clear old peer markers
+    this.peerMarkers.forEach(marker => marker.remove());
+    this.peerMarkers.clear();
 
     people.forEach(person => {
       if (!isSearching && person.distanceMeters > maxRadius) return;
+      if (typeof person.lat !== 'number' || typeof person.lng !== 'number') return;
 
       const dStr = formatDistance(person.distanceMeters, this.lang || 'hy');
 
-      // Telegram styled peer marker with avatar, online dot, and chat-bubble distance tag
-      const markerHtml = `
-        <div class="tg-peer-map-marker ${person.online ? 'is-online' : ''}" data-id="${person.id}">
-          <div class="tg-peer-avatar-wrap">
-            <img src="${person.avatarUrl}" alt="${person.name}" class="tg-peer-avatar-img" />
-            <span class="tg-peer-status-dot ${person.online ? 'is-online' : ''}"></span>
-          </div>
-          <div class="tg-peer-bubble-tag">${dStr}</div>
+      const markerEl = document.createElement('div');
+      markerEl.className = `tg-peer-map-marker ${person.online ? 'is-online' : ''}`;
+      markerEl.dataset.id = person.id;
+      markerEl.innerHTML = `
+        <div class="tg-peer-avatar-wrap">
+          <img src="${person.avatarUrl}" alt="${person.name}" class="tg-peer-avatar-img" />
+          <span class="tg-peer-status-dot ${person.online ? 'is-online' : ''}"></span>
         </div>
+        <div class="tg-peer-bubble-tag">${dStr}</div>
       `;
 
-      const customIcon = L.divIcon({
-        className: 'tg-peer-div-icon',
-        html: markerHtml,
-        iconSize: [48, 54],
-        iconAnchor: [24, 27]
-      });
-
-      const marker = L.marker([person.lat, person.lng], { icon: customIcon });
-
-      marker.on('click', () => {
+      markerEl.addEventListener('click', () => {
         soundManager.playTap();
         this.onSelectPerson(person);
       });
 
-      // Telegram chat bubble tooltip
-      marker.bindTooltip(`
+      const popup = new maplibregl.Popup({
+        offset: [0, -32],
+        closeButton: false,
+        className: 'custom-tg-tooltip'
+      }).setHTML(`
         <div class="tg-map-tooltip">
           <div class="tg-tt-name">${person.name}</div>
           <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? '🟢 Օնլայն' : person.lastSeen}</div>
         </div>
-      `, {
-        direction: 'top',
-        offset: [0, -28],
-        className: 'custom-tg-tooltip'
-      });
+      `);
 
-      this.markersGroup.addLayer(marker);
+      const marker = new maplibregl.Marker({ element: markerEl, anchor: 'bottom' })
+        .setLngLat([person.lng, person.lat])
+        .setPopup(popup)
+        .addTo(this.map);
+
+      this.peerMarkers.set(person.id, marker);
     });
   }
 
   updateRadius(radiusMeters) {
-    if (this.radiusCircle) {
-      this.radiusCircle.setRadius(radiusMeters);
+    this.currentRadius = radiusMeters;
+    if (this.map && this.isLoaded && this.map.getSource('search-radius') && this.currentCenter) {
+      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.currentCenter, this.currentRadius));
     }
   }
 
   recenter() {
     if (this.map && this.currentCenter) {
-      this.map.flyTo([this.currentCenter.lat, this.currentCenter.lng], 18, {
-        animate: true,
-        duration: 0.8
+      this.map.flyTo({
+        center: [this.currentCenter.lng, this.currentCenter.lat],
+        zoom: 17.2,
+        essential: true,
+        duration: 700
       });
     }
   }
@@ -210,7 +234,7 @@ export class MapEngine {
   invalidateSize() {
     if (this.map) {
       setTimeout(() => {
-        this.map.invalidateSize();
+        this.map.resize();
       }, 100);
     }
   }
