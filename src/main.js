@@ -5,7 +5,8 @@ import {
   DEFAULT_COORDS,
   formatDistance,
   createAvatarSvg,
-  matchesSearchQuery
+  matchesSearchQuery,
+  isMaleName
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
@@ -231,7 +232,8 @@ class AppController {
       id: p.id,
       name: p.name || 'Telegram User',
       username: p.username || 'user',
-      avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], '👤'),
+      gender: p.gender || (isMaleName(p.name) ? 'male' : 'female'),
+      avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩'),
       bio: p.bio || (p.isSameWifi ? 'Միացված է նույն WiFi ցանցին 📶' : 'Առցանց իրական օգտատեր Telegram-ում'),
       interests: p.interests && p.interests.length ? p.interests : (p.isSameWifi ? ['WiFi', 'Nearby', 'Telegram'] : ['Telegram', 'Nearby']),
       online: true,
@@ -252,9 +254,19 @@ class AppController {
   applyFiltersAndSearch() {
     const q = this.searchQuery.toLowerCase().trim();
 
+    const matchesFilter = (p) => {
+      if (this.activeFilter === 'online' && !p.online) return false;
+      if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
+      if (this.activeFilter === 'tech' && !p.interests?.some(i => /tech|տեխ|it|dev|code|ծրագր/i.test(i)) && !/tech|տեխ|it|dev/i.test(p.bio || '')) return false;
+      if (this.activeFilter === 'male' && p.gender !== 'male') return false;
+      return true;
+    };
+
     if (q) {
       // Search ONLY among real connected peers
-      this.filteredPeople = this.people.filter(p => matchesSearchQuery(p, this.searchQuery));
+      this.filteredPeople = this.people
+        .filter(p => matchesSearchQuery(p, this.searchQuery))
+        .filter(matchesFilter);
 
       // Update radar & map to render searched people
       if (this.radarEngine) {
@@ -265,11 +277,9 @@ class AppController {
       }
     } else {
       // Proximity Radar Mode: strictly within current radius slider
-      this.filteredPeople = this.people.filter(p => {
-        if (p.distanceMeters > this.currentRadius) return false;
-        if (this.activeFilter === 'online' && !p.online) return false;
-        return true;
-      });
+      this.filteredPeople = this.people
+        .filter(p => p.distanceMeters <= this.currentRadius)
+        .filter(matchesFilter);
 
       if (this.radarEngine) {
         this.radarEngine.setPeople(this.filteredPeople, this.currentRadius);
@@ -746,7 +756,7 @@ class AppController {
     document.getElementById('pill-online').textContent = t.filterOnline;
     document.getElementById('pill-close').textContent = t.filterClose;
     document.getElementById('pill-tech').textContent = t.filterTech;
-    document.getElementById('pill-social').textContent = t.filterSocial;
+    document.getElementById('pill-male').textContent = t.filterMale;
 
     if (this.searchInput) {
       this.searchInput.placeholder = t.searchPlaceholder;

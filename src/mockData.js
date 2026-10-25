@@ -143,3 +143,33 @@ export function getNearbyPeople(centerCoords) {
 export function createDynamicTelegramUser(query, centerCoords) {
   return null;
 }
+
+// Heuristic to detect male / female Armenian and international names
+export function isMaleName(name = '', explicitGender = null) {
+  if (explicitGender === 'male' || explicitGender === 'արու') return true;
+  if (explicitGender === 'female' || explicitGender === 'էգ') return false;
+  if (!name) return true;
+
+  const n = String(name).trim().toLowerCase();
+  
+  // Known female Armenian / common names
+  const femaleList = [
+    'անի', 'լիլիթ', 'աննա', 'մարիամ', 'սոնա', 'տաթև', 'տաթևիկ', 'հասմիկ',
+    'լուիզա', 'էլեն', 'դիանա', 'սյուզի', 'արմինե', 'գայանե', 'մարինե',
+    'սաթենիկ', 'նարինե', 'ռուզաննա', 'էմմա', 'ալիսա', 'ջուլի', 'սոֆի',
+    'մարիա', 'լուսինե', 'անուշ', 'անահիտ', 'ասթղիկ', 'շուշան', 'քրիստինե',
+    'մանե', 'սեդա', 'նունե', 'արաքս', 'արաքսյա', 'արևիկ', 'գոհար', 'հռիփսիմե',
+    'նվարդ', 'ռոզա', 'սյուզաննա', 'վարդուհի', 'տիրուհի', 'օֆելյա', 'մերի'
+  ];
+
+  for (const fn of femaleList) {
+    if (n.startsWith(fn) || n.includes(' ' + fn) || n === fn) return false;
+  }
+
+  // Common female endings in Armenian
+  if (n.endsWith('ուհի') || n.endsWith('ինե') || n.endsWith('անե')) {
+    return false;
+  }
+
+  return true; // Default to male ('արու')
+}
