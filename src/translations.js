@@ -7,7 +7,7 @@ export const translations = {
     tabMap: "Քարտեզ",
     tabList: "Ցուցակ",
     radarScanning: "Ռադարը սկանավորում է մոտակայքը...",
-    peopleFound: "մարդ մոտակայքում",
+    peopleFound: "մարդ",
     radius: "Շառավիղ",
     filterAll: "Բոլորը",
     filterOnline: "Օնլայն",
