@@ -131,6 +131,7 @@ class AppController {
     this.radarTotalCount = document.getElementById('radar-count-total');
 
     this.tabButtons = document.querySelectorAll('.nav-tab-btn');
+    this.mainNavTabs = document.getElementById('main-nav-tabs');
     this.viewPanels = {
       radar: document.getElementById('radar-view'),
       map: document.getElementById('map-view'),
@@ -447,6 +448,11 @@ class AppController {
     const liveGpsBanner = document.querySelector('.live-gps-banner');
     if (liveGpsBanner) {
       liveGpsBanner.style.display = (tabName === 'map' || tabName === 'chat') ? 'none' : 'flex';
+    }
+
+    // Hide floating footer navbar when in full 1-on-1 chat
+    if (this.mainNavTabs) {
+      this.mainNavTabs.style.display = tabName === 'chat' ? 'none' : 'flex';
     }
 
     // Tab-specific lifecycle hooks
