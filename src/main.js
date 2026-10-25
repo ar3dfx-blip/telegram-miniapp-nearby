@@ -443,6 +443,12 @@ class AppController {
       }
     });
 
+    // Hide real GPS info banner on map and chat views
+    const liveGpsBanner = document.querySelector('.live-gps-banner');
+    if (liveGpsBanner) {
+      liveGpsBanner.style.display = (tabName === 'map' || tabName === 'chat') ? 'none' : 'flex';
+    }
+
     // Tab-specific lifecycle hooks
     if (tabName === 'map') {
       if (!this.mapEngine) {
@@ -610,24 +616,7 @@ class AppController {
       });
     }
 
-    // OpenStreetMap Theme Toggle (Standard / Minimal Soft 3D / Humanitarian)
-    const mapThemeBtn = document.getElementById('tg-map-theme-toggle');
-    if (mapThemeBtn) {
-      mapThemeBtn.addEventListener('click', () => {
-        soundManager.playTap();
-        if (this.mapEngine) {
-          const newTheme = this.mapEngine.toggleTheme();
-          const themeIcon = document.getElementById('tg-map-theme-icon');
-          const themeText = document.getElementById('tg-map-theme-text');
-          if (themeIcon) {
-            themeIcon.textContent = newTheme === 'osm-minimal' ? '✨' : newTheme === 'osm-humanitarian' ? '⛰️' : '🗺️';
-          }
-          if (themeText) {
-            themeText.textContent = this.mapEngine.getThemeName(newTheme);
-          }
-        }
-      });
-    }
+
 
     // Telegram Live Location Share Button
     const shareLiveBtn = document.getElementById('tg-drawer-share-btn');
@@ -780,8 +769,6 @@ class AppController {
     }
 
     // Telegram Map texts
-    const badgeEl = document.getElementById('t-tg-map-badge');
-    if (badgeEl && t.tgMapBadge) badgeEl.textContent = t.tgMapBadge;
     const drawerTitleEl = document.getElementById('t-tg-drawer-title');
     if (drawerTitleEl && t.tgDrawerTitle) drawerTitleEl.textContent = t.tgDrawerTitle;
     const shareBtnEl = document.getElementById('t-tg-share-btn');

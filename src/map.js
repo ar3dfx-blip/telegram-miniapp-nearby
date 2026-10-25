@@ -41,20 +41,17 @@ export class MapEngine {
     const lat = this.currentCenter?.lat || 40.1776;
     const lng = this.currentCenter?.lng || 44.5126;
 
-    // Initialize Leaflet map with zoom 18 for OpenStreetMap micro-proximity
+    // Initialize Leaflet map with zoom 18 for clean graphical view
     this.map = L.map(this.containerId, {
       center: [lat, lng],
       zoom: 18,
       maxZoom: 19,
       zoomControl: false,
-      attributionControl: true
+      attributionControl: false
     });
 
     // Apply OpenStreetMap tile layer
     this.applyTileLayer(this.currentTheme);
-
-    // Zoom control at bottom-right (styled with Neumorphic 3D buttons)
-    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
     // Markers layer group
     this.markersGroup = L.layerGroup().addTo(this.map);

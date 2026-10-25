@@ -521,12 +521,11 @@ canvas#radar-canvas {
   box-shadow: 2px 2px 6px var(--shadow-outer) !important;
   border: 1px solid rgba(255, 255, 255, 0.8) !important;
   margin: 6px 10px !important;
+  display: none !important;
 }
 
-.leaflet-control-attribution a {
-  color: var(--accent-primary) !important;
-  text-decoration: none !important;
-  font-weight: 600 !important;
+.leaflet-control-zoom {
+  display: none !important;
 }
 
 .tg-map-top-bar {
