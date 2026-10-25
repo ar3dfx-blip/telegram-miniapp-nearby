@@ -89,7 +89,7 @@ html, body {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   background-color: var(--bg-primary);
   padding: max(16px, calc(env(safe-area-inset-top, 0px) + 8px)) 20px 12px;
   box-shadow: 0 4px 14px rgba(210, 213, 219, 0.45);
@@ -496,15 +496,20 @@ canvas#radar-canvas {
 .map-view-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px);
+  flex: 1;
+  height: calc(100vh - 80px);
+  height: calc(100dvh - 80px);
+  width: 100%;
   position: relative;
   background: var(--bg-primary);
+  overflow: hidden;
 }
 
 #leaflet-map {
   flex: 1;
   width: 100%;
   height: 100%;
+  min-height: 100%;
   background: var(--bg-primary);
 }
 
@@ -642,7 +647,7 @@ canvas#radar-canvas {
 
 .tg-recenter-btn {
   position: absolute;
-  bottom: 225px;
+  bottom: 86px;
   right: 16px;
   z-index: 600;
   width: 48px;
@@ -657,6 +662,12 @@ canvas#radar-canvas {
   box-shadow: var(--neu-flat-dial);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .tg-recenter-btn {
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 78px));
+  }
 }
 
 .tg-recenter-btn:hover {
