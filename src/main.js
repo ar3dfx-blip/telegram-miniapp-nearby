@@ -114,11 +114,7 @@ class AppController {
           // Automatically set app language to match user's Telegram language
           if (tgUser.language_code) {
             const lower = tgUser.language_code.toLowerCase();
-            let matched = 'hy';
-            if (lower.startsWith('ru')) matched = 'ru';
-            else if (lower.startsWith('en')) matched = 'en';
-            else if (lower.startsWith('hy')) matched = 'hy';
-            else matched = 'en';
+            let matched = lower.startsWith('hy') ? 'hy' : 'en';
 
             if (!localStorage.getItem('tma_preferred_lang')) {
               this.currentLang = matched;
@@ -642,7 +638,7 @@ class AppController {
     if (langBtn) {
       langBtn.addEventListener('click', () => {
         soundManager.playTap();
-        const langs = ['hy', 'en', 'ru'];
+        const langs = ['hy', 'en'];
         const nextIdx = (langs.indexOf(this.currentLang) + 1) % langs.length;
         this.currentLang = langs[nextIdx];
         try {
@@ -738,7 +734,7 @@ class AppController {
   // 11. Apply Translations
   applyTranslations() {
     const t = translations[this.currentLang];
-    const flagMap = { hy: '🇦🇲', en: '🇬🇧', ru: '🇷🇺' };
+    const flagMap = { hy: '🇦🇲', en: '🇬🇧' };
 
     document.getElementById('current-lang-code').textContent = flagMap[this.currentLang] || '🇦🇲';
     document.getElementById('t-app-title').textContent = t.appTitle;
@@ -862,14 +858,13 @@ class AppController {
     if (paramLang) {
       const clean = paramLang.toLowerCase();
       if (clean.startsWith('hy')) return 'hy';
-      if (clean.startsWith('ru')) return 'ru';
       if (clean.startsWith('en')) return 'en';
     }
 
     // 2. Saved user preference in localStorage if previously selected
     try {
       const saved = localStorage.getItem('tma_preferred_lang');
-      if (saved && (saved === 'hy' || saved === 'ru' || saved === 'en')) {
+      if (saved && (saved === 'hy' || saved === 'en')) {
         return saved;
       }
     } catch {}
@@ -881,7 +876,6 @@ class AppController {
       if (tgUser?.language_code) {
         const lower = tgUser.language_code.toLowerCase();
         if (lower.startsWith('hy')) return 'hy';
-        if (lower.startsWith('ru')) return 'ru';
         if (lower.startsWith('en')) return 'en';
         return 'en';
       }
@@ -893,7 +887,6 @@ class AppController {
     if (typeof navigator !== 'undefined' && navigator.language) {
       const navLower = navigator.language.toLowerCase();
       if (navLower.startsWith('hy')) return 'hy';
-      if (navLower.startsWith('ru')) return 'ru';
       if (navLower.startsWith('en')) return 'en';
     }
 

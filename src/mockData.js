@@ -69,10 +69,6 @@ export function formatDistance(meters, lang = 'hy') {
     if (m < 1000) return `${m} m`;
     return `${(m / 1000).toFixed(1)} km`;
   }
-  if (lang === 'ru') {
-    if (m < 1000) return `${m} м`;
-    return `${(m / 1000).toFixed(1)} км`;
-  }
   if (m < 1000) return `${m} մ`;
   return `${(m / 1000).toFixed(1)} կմ`;
 }

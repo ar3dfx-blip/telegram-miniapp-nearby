@@ -198,7 +198,7 @@ export class RadarEngine {
 
       // Distance tag
       const val = this.maxRadiusMeters * step;
-      const unit = this.lang === 'hy' ? 'մ' : this.lang === 'ru' ? 'м' : 'm';
+      const unit = this.lang === 'hy' ? 'մ' : 'm';
       const distLabel = (Number.isInteger(val) ? val : val.toFixed(1)) + unit;
       ctx.fillStyle = '#8c8f94';
       ctx.font = '500 10px Inter, -apple-system, sans-serif';
@@ -308,7 +308,7 @@ export class RadarEngine {
       // Mini status tag if hovered or very close
       if (isHovered || person.distanceMeters <= 1.2) {
         const nameStr = person.name.split(' ')[0];
-        const unit = this.lang === 'hy' ? 'մ' : this.lang === 'ru' ? 'м' : 'm';
+        const unit = this.lang === 'hy' ? 'մ' : 'm';
         const dText = (Number.isInteger(person.distanceMeters) ? person.distanceMeters : person.distanceMeters.toFixed(1)) + unit;
         
         ctx.save();
