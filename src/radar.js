@@ -23,6 +23,10 @@ export class RadarEngine {
     this.setupListeners();
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    if (window.ResizeObserver && this.canvas.parentElement) {
+      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver.observe(this.canvas.parentElement);
+    }
   }
 
   setupListeners() {
@@ -49,23 +53,30 @@ export class RadarEngine {
   }
 
   resize() {
-    const rect = this.canvas.parentElement.getBoundingClientRect();
-    const size = Math.min(rect.width, 480);
+    const parent = this.canvas.parentElement;
+    if (!parent) return;
+
+    const rect = parent.getBoundingClientRect();
+    // Strictly take the MINIMUM of width and height so the radar is ALWAYS an exact 1:1 circle
+    const availableW = rect.width > 0 ? rect.width : 300;
+    const availableH = rect.height > 0 ? rect.height : availableW;
+    const squareSize = Math.max(160, Math.floor(Math.min(availableW, availableH)));
+
     const dpr = window.devicePixelRatio || 1;
 
-    this.width = size;
-    this.height = size;
+    this.width = squareSize;
+    this.height = squareSize;
 
-    this.canvas.width = size * dpr;
-    this.canvas.height = size * dpr;
-    this.canvas.style.width = `${size}px`;
-    this.canvas.style.height = `${size}px`;
+    this.canvas.width = Math.round(squareSize * dpr);
+    this.canvas.height = Math.round(squareSize * dpr);
+    this.canvas.style.width = `${squareSize}px`;
+    this.canvas.style.height = `${squareSize}px`;
 
     this.ctx.resetTransform?.();
     this.ctx.scale(dpr, dpr);
-    this.centerX = size / 2;
-    this.centerY = size / 2;
-    this.radarRadius = (size / 2) - 24;
+    this.centerX = squareSize / 2;
+    this.centerY = squareSize / 2;
+    this.radarRadius = (squareSize / 2) - 22;
   }
 
   setPeople(people, maxRadius = 500) {
@@ -95,6 +106,9 @@ export class RadarEngine {
     if (this.animId) {
       cancelAnimationFrame(this.animId);
       this.animId = null;
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
     }
   }
 

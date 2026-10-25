@@ -311,23 +311,32 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 20px 24px;
-  gap: 20px;
+  justify-content: flex-start;
+  padding: 16px 20px 24px;
+  gap: 16px;
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 3D Neumorphic Circular Dial Knob */
+/* 3D Neumorphic Circular Dial Knob - Always 100% Round Circle */
 .radar-canvas-card {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 380px;
-  aspect-ratio: 1;
+  /* Use CSS min() so width and height are strictly identical on all screen aspect ratios */
+  width: min(86vw, 360px, calc(100dvh - 300px));
+  height: min(86vw, 360px, calc(100dvh - 300px));
+  min-width: 200px;
+  min-height: 200px;
+  aspect-ratio: 1 / 1 !important;
+  flex: 0 0 auto !important; /* Prevents vertical squashing into an oval */
+  margin: 0 auto;
   background: var(--bg-primary);
-  border-radius: 50%;
-  padding: 14px;
+  border-radius: 50% !important;
+  padding: 12px;
+  box-sizing: border-box;
   box-shadow: 
     14px 14px 28px var(--shadow-outer),
     -14px -14px 28px var(--shadow-inner),
@@ -337,9 +346,10 @@ html, body {
 }
 
 canvas#radar-canvas {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
   display: block;
 }
 
