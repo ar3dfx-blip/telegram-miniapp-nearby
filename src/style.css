@@ -113,18 +113,19 @@ html, body {
   width: 44px;
   height: 44px;
   background: var(--bg-primary);
-  border-radius: 14px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--neu-flat-sm);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
 .app-brand-logo-img {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
+  border-radius: 50%;
   transition: transform 0.25s ease;
 }
 
@@ -136,7 +137,7 @@ html, body {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: 14px;
+  border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 140, 105, 0.3) 0%, rgba(148, 94, 255, 0.15) 70%, transparent 100%);
   animation: neuPulse 2.6s ease-out infinite;
   z-index: -1;
