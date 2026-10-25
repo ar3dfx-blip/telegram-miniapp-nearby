@@ -21,8 +21,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script type="module" crossorigin src="./assets/index-BD5y0JT6.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Cpq4g5Qw.css">
+    <script type="module" crossorigin src="./assets/index-Chj58LeH.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cx1CslY5.css">
   </head>
   <body>
     <div id="app">
@@ -102,6 +102,37 @@
             <span id="radar-count-total" style="display:none;"></span>
             <span id="current-location-text" style="display:none;"></span>
           </div>
+
+          <!-- 3. LIST SECTION UNDER RADAR -->
+          <div class="radar-list-section" id="radar-list-section">
+            <!-- Search box -->
+            <div class="search-box-wrapper">
+              <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                id="list-search-input"
+                class="search-input"
+                placeholder="Փնտրել անունով, հետաքրքրություններով..."
+              />
+            </div>
+
+            <!-- Filter Pills -->
+            <div class="filter-pills-row" id="filter-pills">
+              <button class="filter-pill active" data-filter="all" id="pill-all">Բոլորը</button>
+              <button class="filter-pill" data-filter="online" id="pill-online">Առցանց</button>
+              <button class="filter-pill" data-filter="close" id="pill-close">Մոտակա (&lt;2մ)</button>
+              <button class="filter-pill" data-filter="tech" id="pill-tech">Տեխ / IT</button>
+              <button class="filter-pill" data-filter="male" id="pill-male">Արու</button>
+            </div>
+
+            <!-- Cards List -->
+            <div class="people-cards-list" id="people-cards-list">
+              <!-- Dynamic cards rendered by JS -->
+            </div>
+          </div>
         </section>
 
         <!-- 2. MAP VIEW (3D Neumorphic Engine) -->
@@ -117,36 +148,8 @@
           </button>
         </section>
 
-        <!-- 3. LIST VIEW -->
-        <section id="list-view" class="list-view-container" style="display:none;">
-          <!-- Search box -->
-          <div class="search-box-wrapper">
-            <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              id="list-search-input"
-              class="search-input"
-              placeholder="Փնտրել անունով, հետաքրքրություններով..."
-            />
-          </div>
-
-          <!-- Filter Pills -->
-          <div class="filter-pills-row" id="filter-pills">
-            <button class="filter-pill active" data-filter="all" id="pill-all">Բոլորը</button>
-            <button class="filter-pill" data-filter="online" id="pill-online">Առցանց</button>
-            <button class="filter-pill" data-filter="close" id="pill-close">Մոտակա (&lt;2մ)</button>
-            <button class="filter-pill" data-filter="tech" id="pill-tech">Տեխ / IT</button>
-            <button class="filter-pill" data-filter="male" id="pill-male">Արու</button>
-          </div>
-
-          <!-- Cards List -->
-          <div class="people-cards-list" id="people-cards-list">
-            <!-- Dynamic cards rendered by JS -->
-          </div>
-        </section>
+        <!-- Legacy List View Placeholder -->
+        <section id="list-view" class="list-view-container" style="display:none;"></section>
 
         <!-- 4. CHAT VIEW -->
         <section id="chat-view" style="display:none; flex:1;">
