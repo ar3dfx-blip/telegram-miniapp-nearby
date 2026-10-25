@@ -230,31 +230,118 @@ export class RadarEngine {
     ctx.fillText('W', centerX - radarRadius - 10, centerY + 4);
     ctx.fillText('E', centerX + radarRadius + 10, centerY + 4);
 
-    // 4. Sonar Rotating Sweep Beam (Soft purple accent glow)
+    // 4. Sonar Rotating Sweep Beam (120° Wide Trail with Animated Visual Noise)
+    const sweepAngle = (120 * Math.PI) / 180; // Exactly 120 degrees (~2.094 rad)
+    const startAngle = this.angle - sweepAngle;
+    const endAngle = this.angle;
+
     ctx.save();
+    // Clip strictly to the 120-degree sector
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radarRadius, this.angle - 0.45, this.angle);
+    ctx.arc(centerX, centerY, radarRadius, startAngle, endAngle);
     ctx.closePath();
+    ctx.clip();
 
-    const sweepGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radarRadius);
-    sweepGrad.addColorStop(0, 'rgba(148, 94, 255, 0.32)');
-    sweepGrad.addColorStop(0.7, 'rgba(175, 135, 255, 0.12)');
-    sweepGrad.addColorStop(1, 'rgba(242, 243, 247, 0.01)');
-    ctx.fillStyle = sweepGrad;
+    // Conic gradient for smooth 120° exponential fade behind the leading edge
+    const conic = ctx.createConicGradient(startAngle, centerX, centerY);
+    conic.addColorStop(0, 'rgba(148, 94, 255, 0.0)');
+    conic.addColorStop(0.08, 'rgba(148, 94, 255, 0.03)');
+    conic.addColorStop(0.18, 'rgba(148, 94, 255, 0.09)');
+    conic.addColorStop(0.26, 'rgba(165, 120, 255, 0.20)');
+    conic.addColorStop(0.31, 'rgba(175, 135, 255, 0.32)');
+    conic.addColorStop(0.3333, 'rgba(195, 155, 255, 0.46)');
+    conic.addColorStop(0.3334, 'rgba(148, 94, 255, 0.0)');
+    conic.addColorStop(1.0, 'rgba(148, 94, 255, 0.0)');
+
+    ctx.fillStyle = conic;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Sweep leading edge line
+    // Radial glow overlay near center
+    const radialGlow = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, radarRadius);
+    radialGlow.addColorStop(0, 'rgba(180, 140, 255, 0.25)');
+    radialGlow.addColorStop(0.6, 'rgba(148, 94, 255, 0.08)');
+    radialGlow.addColorStop(1, 'rgba(148, 94, 255, 0.01)');
+    ctx.fillStyle = radialGlow;
+    ctx.fill();
+
+    // --- ANIMATED VISUAL NOISE & GRAIN INSIDE SWEEP ---
+    // A. Dynamic Phosphor Noise Particles
+    const noiseCount = 220;
+    for (let i = 0; i < noiseCount; i++) {
+      const randAngle = startAngle + Math.random() * sweepAngle;
+      const r = 8 + Math.sqrt(Math.random()) * (radarRadius - 10);
+      const px = centerX + r * Math.cos(randAngle);
+      const py = centerY + r * Math.sin(randAngle);
+
+      const proximity = (randAngle - startAngle) / sweepAngle; // 0 at tail, 1 at leading edge
+      const intensity = Math.pow(proximity, 1.3);
+
+      const alpha = (0.12 + Math.random() * 0.75) * intensity * 0.9;
+      const size = Math.random() > 0.88 ? 1.8 : (Math.random() > 0.5 ? 1.2 : 0.8);
+
+      ctx.fillStyle = Math.random() > 0.3
+        ? `rgba(185, 150, 255, ${alpha})`
+        : `rgba(245, 240, 255, ${alpha * 1.3})`;
+
+      ctx.fillRect(px - size / 2, py - size / 2, size, size);
+    }
+
+    // B. Flickering Interference Waves & Radar Noise Arcs
+    const time = Date.now() * 0.0035;
+    for (let i = 0; i < 4; i++) {
+      const phase = (time + i * 0.25) % 1;
+      const waveR = 15 + phase * (radarRadius - 18);
+      const waveAlpha = Math.sin(phase * Math.PI) * 0.24;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, waveR, startAngle, endAngle);
+      ctx.strokeStyle = `rgba(205, 175, 255, ${waveAlpha})`;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3 + Math.random() * 4, 4 + Math.random() * 6]);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // C. Micro-radial Static Streaks
+    for (let i = 0; i < 3; i++) {
+      const streakAngle = endAngle - Math.random() * (sweepAngle * 0.7);
+      const streakLen = (0.2 + Math.random() * 0.75) * radarRadius;
+      const prox = (streakAngle - startAngle) / sweepAngle;
+      const streakAlpha = (0.06 + Math.random() * 0.18) * Math.pow(prox, 1.5);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + streakLen * Math.cos(streakAngle),
+        centerY + streakLen * Math.sin(streakAngle)
+      );
+      ctx.strokeStyle = `rgba(220, 195, 255, ${streakAlpha})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore(); // End clipping
+
+    // Leading edge glowing sweep line
+    ctx.save();
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
       centerX + radarRadius * Math.cos(this.angle),
       centerY + radarRadius * Math.sin(this.angle)
     );
-    ctx.strokeStyle = 'rgba(148, 94, 255, 0.85)';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = 'rgba(148, 94, 255, 0.4)';
-    ctx.shadowBlur = 8;
+    ctx.strokeStyle = 'rgba(165, 120, 255, 0.95)';
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = 'rgba(148, 94, 255, 0.75)';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+
+    // Center core bright highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = '#ffffff';
     ctx.stroke();
     ctx.restore();
 
@@ -269,9 +356,19 @@ export class RadarEngine {
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
 
-      if (Math.abs(diff) < 0.08) {
-        if (!this.blipPings.has(person.id) || this.blipPings.get(person.id) < 0.1) {
+      // When leading edge passes the blip
+      if (Math.abs(diff) < 0.12) {
+        if (!this.blipPings.has(person.id) || this.blipPings.get(person.id) < 0.2) {
           this.blipPings.set(person.id, 1.0);
+        }
+      }
+
+      // If blip is within the 120° trailing beam, keep it glowing with the beam
+      if (diff >= 0 && diff <= sweepAngle) {
+        const trailIntensity = Math.pow(1 - diff / sweepAngle, 1.2);
+        const currentPing = this.blipPings.get(person.id) || 0;
+        if (trailIntensity > currentPing) {
+          this.blipPings.set(person.id, trailIntensity);
         }
       }
 
