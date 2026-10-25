@@ -91,7 +91,7 @@ html, body {
   top: 0;
   z-index: 100;
   background-color: var(--bg-primary);
-  padding: 16px 20px 12px;
+  padding: max(16px, calc(env(safe-area-inset-top, 0px) + 8px)) 20px 12px;
   box-shadow: 0 4px 14px rgba(210, 213, 219, 0.45);
 }
 

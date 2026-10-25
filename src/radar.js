@@ -219,21 +219,16 @@ export class RadarEngine {
     ctx.lineTo(centerX, centerY + radarRadius);
     ctx.stroke();
 
-    // Compass cardinal markers
-    const nLabel = this.lang === 'ru' ? 'С (N)' : this.lang === 'en' ? 'N' : 'ՀՍ (N)';
-    const sLabel = this.lang === 'ru' ? 'Ю (S)' : this.lang === 'en' ? 'S' : 'ՀՎ (S)';
-    const wLabel = this.lang === 'ru' ? 'З (W)' : this.lang === 'en' ? 'W' : 'ԱՐՄ (W)';
-    const eLabel = this.lang === 'ru' ? 'В (E)' : this.lang === 'en' ? 'E' : 'ԱՐԼ (E)';
-
+    // Compass cardinal markers (Clean N, S, W, E without Armenian abbreviations)
     ctx.font = '600 11px Inter, -apple-system, sans-serif';
     ctx.fillStyle = '#945eff'; // Accent purple for North
     ctx.textAlign = 'center';
-    ctx.fillText(nLabel, centerX, centerY - radarRadius - 6);
+    ctx.fillText('N', centerX, centerY - radarRadius - 6);
 
     ctx.fillStyle = '#8c8f94';
-    ctx.fillText(sLabel, centerX, centerY + radarRadius + 15);
-    ctx.fillText(wLabel, centerX - radarRadius - 12, centerY + 4);
-    ctx.fillText(eLabel, centerX + radarRadius + 12, centerY + 4);
+    ctx.fillText('S', centerX, centerY + radarRadius + 15);
+    ctx.fillText('W', centerX - radarRadius - 10, centerY + 4);
+    ctx.fillText('E', centerX + radarRadius + 10, centerY + 4);
 
     // 4. Sonar Rotating Sweep Beam (Soft purple accent glow)
     ctx.save();

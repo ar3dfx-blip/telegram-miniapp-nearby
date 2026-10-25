@@ -62,6 +62,29 @@ class AppController {
         tg.ready();
         tg.expand();
 
+        // 1. Enter Fullscreen Mode (Bot API 8.0+) to hide Telegram native header & Close button
+        const tryFullscreen = () => {
+          if (typeof tg.requestFullscreen === 'function' && !tg.isFullscreen) {
+            try { tg.requestFullscreen(); } catch (e) {}
+          }
+        };
+        tryFullscreen();
+        window.addEventListener('click', tryFullscreen, { once: true });
+        window.addEventListener('touchstart', tryFullscreen, { once: true });
+
+        // 2. Disable vertical swipes so app is stable and does not collapse
+        if (typeof tg.disableVerticalSwipes === 'function') {
+          try { tg.disableVerticalSwipes(); } catch (e) {}
+        }
+
+        // 3. Set Telegram Header and Background Color to match Neumorphism primary background
+        if (typeof tg.setHeaderColor === 'function') {
+          try { tg.setHeaderColor('#f2f3f7'); } catch (e) {}
+        }
+        if (typeof tg.setBackgroundColor === 'function') {
+          try { tg.setBackgroundColor('#f2f3f7'); } catch (e) {}
+        }
+
         // Sync colors if provided by Telegram client
         if (tg.themeParams) {
           if (tg.themeParams.bg_color) {
@@ -738,7 +761,8 @@ class AppController {
 
     document.getElementById('current-lang-code').textContent = flagMap[this.currentLang] || '🇦🇲';
     document.getElementById('t-app-title').textContent = t.appTitle;
-    document.getElementById('t-app-subtitle').textContent = t.appSubtitle;
+    const subEl = document.getElementById('t-app-subtitle');
+    if (subEl) subEl.textContent = t.appSubtitle;
     document.getElementById('t-tab-radar').textContent = t.tabRadar;
     document.getElementById('t-tab-map').textContent = t.tabMap;
     document.getElementById('t-tab-list').textContent = t.tabList;
