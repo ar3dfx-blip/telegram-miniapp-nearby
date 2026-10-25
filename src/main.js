@@ -579,6 +579,14 @@ class AppController {
     });
   }
 
+  formatRadarRange(meters, lang = 'hy') {
+    if (lang === 'en') {
+      return `${meters} m`;
+    }
+    const str = String(meters).replace('.', ',');
+    return `${str} մետր`;
+  }
+
   // 9. Setup Event Listeners
   setupEventListeners() {
     // Navigation Tabs
@@ -592,7 +600,9 @@ class AppController {
     if (this.radarSlider) {
       this.radarSlider.addEventListener('input', (e) => {
         this.currentRadius = parseFloat(e.target.value);
-        this.radarRangeDisplay.textContent = formatDistance(this.currentRadius, this.currentLang);
+        if (this.radarRangeDisplay) {
+          this.radarRangeDisplay.textContent = this.formatRadarRange(this.currentRadius, this.currentLang);
+        }
         if (this.radarEngine) this.radarEngine.setMaxRadius(this.currentRadius);
         if (this.mapEngine) this.mapEngine.updateRadius(this.currentRadius);
         this.applyFiltersAndSearch();
@@ -749,7 +759,8 @@ class AppController {
     document.getElementById('t-tab-radar').textContent = t.tabRadar;
     document.getElementById('t-tab-map').textContent = t.tabMap;
     document.getElementById('t-tab-list').textContent = t.tabList;
-    document.getElementById('t-radius-label').textContent = `${t.radius}՝`;
+    const radiusLabel = document.getElementById('t-radius-label');
+    if (radiusLabel) radiusLabel.textContent = `${t.radius}՝`;
 
     // Filters
     document.getElementById('pill-all').textContent = t.filterAll;
@@ -777,8 +788,12 @@ class AppController {
     if (this.mapEngine) {
       this.mapEngine.setLanguage(this.currentLang);
     }
+    const radarMinDisplay = document.getElementById('radar-min-display');
+    if (radarMinDisplay) {
+      radarMinDisplay.textContent = this.currentLang === 'en' ? '0.5 m' : '0,5 մետր';
+    }
     if (this.radarRangeDisplay) {
-      this.radarRangeDisplay.textContent = formatDistance(this.currentRadius, this.currentLang);
+      this.radarRangeDisplay.textContent = this.formatRadarRange(this.currentRadius, this.currentLang);
     }
 
     // Telegram Map texts
