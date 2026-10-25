@@ -57,10 +57,12 @@ export const translations = {
     profileAbout: "Մասին",
     profileInterests: "Հետաքրքրություններ",
     contactSent: "Ձեր ողջույնն ու կոնտակտը ուղարկվեց!",
-    gpsLive: "Իմ իրական GPS դիրքը",
-    gpsRefreshLabel: "Live GPS",
-    tgDrawerTitle: "Մոտակա Մարդիկ",
-    tgShareLive: "Կիսվել Տեղադրությամբ"
+    gpsLive: "WiFi Տեղային Ցանց",
+    gpsRefreshLabel: "WiFi Live",
+    wifiNetworkActive: "📶 WiFi Տեղային Ցանց՝ Ակտիվ է",
+    wifiScanning: "📶 Որոշվում է WiFi ցանցը...",
+    wifiSameNetwork: "Նույն WiFi-ում",
+    wifiTag: "WiFi"
   },
   en: {
     appTitle: "Nearby Connect",
@@ -119,10 +121,12 @@ export const translations = {
     profileAbout: "About",
     profileInterests: "Interests",
     contactSent: "Greeting and contact shared!",
-    gpsLive: "My live GPS location",
-    gpsRefreshLabel: "Live GPS",
-    tgDrawerTitle: "People Nearby",
-    tgShareLive: "Share Location"
+    gpsLive: "WiFi Local Network",
+    gpsRefreshLabel: "WiFi Live",
+    wifiNetworkActive: "📶 WiFi Local Network: Active",
+    wifiScanning: "📶 Scanning WiFi network...",
+    wifiSameNetwork: "Same WiFi",
+    wifiTag: "WiFi"
   },
   ru: {
     appTitle: "Люди Рядом",
@@ -165,7 +169,7 @@ export const translations = {
       "🚀 Рад знакомству!",
       "📍 Где ты сейчас находишься?"
     ],
-    locationDetected: "📍 GPS координаты определены",
+    locationDetected: "📶 Локация определена по WiFi",
     changeLocation: "Обновить локацию",
     soundEffects: "Звуки",
     haptics: "Вибрация",
@@ -180,9 +184,11 @@ export const translations = {
     profileAbout: "О себе",
     profileInterests: "Интересы",
     contactSent: "Приветствие и контакт отправлены!",
-    gpsLive: "Мой реальный GPS",
-    gpsRefreshLabel: "Live GPS",
-    tgDrawerTitle: "Люди Рядом",
-    tgShareLive: "Поделиться Геопозицией"
+    gpsLive: "Локальная сеть WiFi",
+    gpsRefreshLabel: "WiFi Live",
+    wifiNetworkActive: "📶 Локальная сеть WiFi: Активна",
+    wifiScanning: "📶 Поиск сети WiFi...",
+    wifiSameNetwork: "В той же сети WiFi",
+    wifiTag: "WiFi"
   }
 };

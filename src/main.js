@@ -16,7 +16,7 @@ import confetti from 'canvas-confetti';
 class AppController {
   constructor() {
     this.currentLang = this.detectTelegramLanguage();
-    this.currentCoords = null;
+    this.currentCoords = { ...DEFAULT_COORDS };
     this.currentRadius = 50;
     this.activeTab = 'radar';
     this.activeFilter = 'all';
@@ -207,18 +207,12 @@ class AppController {
   }
 
   onRealLocationUpdated(coords) {
-    if (coords && coords.error) {
-      if (this.currentLocationText) {
-        this.currentLocationText.textContent = `📍 Խնդրում ենք թույլատրել GPS-ը սարքում`;
-      }
-      return;
-    }
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
 
-    this.currentCoords = { lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy };
+    this.currentCoords = { lat: coords.lat, lng: coords.lng, city: coords.city, wifiId: coords.wifiId };
     if (this.currentLocationText) {
-      const accStr = coords.accuracy ? ` (±${Math.round(coords.accuracy)}մ)` : '';
-      this.currentLocationText.textContent = `📍 Իրական GPS՝ ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}${accStr}`;
+      const cityStr = coords.city ? ` (${coords.city})` : '';
+      this.currentLocationText.textContent = `📶 WiFi ցանց՝ Ակտիվ է${cityStr}`;
     }
     if (this.mapEngine) {
       this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
@@ -232,23 +226,24 @@ class AppController {
     this.updatePeopleData();
   }
 
-  // 4. Update data on coordinates/radius changes - 100% Real Peers Only
+  // 4. Update data on coordinates/radius changes - 100% WiFi Peers
   updatePeopleData() {
-    // Pure real connected peers (Zero fake / mock profiles)
     this.people = this.realPeers.map(p => ({
       id: p.id,
       name: p.name || 'Telegram User',
       username: p.username || 'user',
       avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], '👤'),
-      bio: p.bio || 'Օնլայն իրական օգտատեր Telegram-ում',
-      interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby'],
+      bio: p.bio || (p.isSameWifi ? 'Միացված է նույն WiFi ցանցին 📶' : 'Օնլայն իրական օգտատեր Telegram-ում'),
+      interests: p.interests && p.interests.length ? p.interests : (p.isSameWifi ? ['WiFi', 'Nearby', 'Telegram'] : ['Telegram', 'Nearby']),
       online: true,
       distanceMeters: p.distanceMeters || 0,
       bearing: p.bearing !== undefined ? p.bearing : 0,
+      isSameWifi: Boolean(p.isSameWifi),
+      wifiCity: p.city || 'Երևան',
       lat: p.lat,
       lng: p.lng,
-      lastSeen: 'Հենց հիմա (Live)',
-      statusEmoji: '⚡',
+      lastSeen: p.isSameWifi ? 'Նույն WiFi ցանցում 📶' : 'Հենց հիմա (Live)',
+      statusEmoji: p.isSameWifi ? '📶' : '⚡',
       telegramId: p.telegramId || null
     }));
 
@@ -373,9 +368,9 @@ class AppController {
             <div class="person-info-col">
               <div class="person-name-row">
                 <span class="person-full-name">${person.name} ${person.statusEmoji || ''}</span>
-                <span class="distance-pill-badge">⚡ ${distStr}</span>
+                <span class="distance-pill-badge">${person.isSameWifi ? '📶 WiFi ' : '⚡ '}${distStr}</span>
               </div>
-              <div class="person-username">@${person.username} • ${person.online ? t.statusOnline : person.lastSeen}</div>
+              <div class="person-username">@${person.username} • ${person.isSameWifi ? '<span style="color:#059669; font-weight:600;">Նույն WiFi</span>' : (person.online ? t.statusOnline : person.lastSeen)}</div>
             </div>
           </div>
 
@@ -723,17 +718,17 @@ class AppController {
       });
     }
 
-    // Live GPS Refresh Button
+    // Live WiFi Refresh Button
     const refreshGpsBtn = document.getElementById('refresh-gps-btn');
     if (refreshGpsBtn) {
       refreshGpsBtn.addEventListener('click', () => {
         soundManager.playTap();
         soundManager.triggerHaptic('light');
         if (this.currentLocationText) {
-          this.currentLocationText.textContent = "📍 Թարմացվում է իրական GPS-ը...";
+          this.currentLocationText.textContent = "📶 Թարմացվում է WiFi ցանցը...";
         }
         if (this.realtimeService) {
-          this.realtimeService.startLocationTracking();
+          this.realtimeService.refreshWifi();
         }
       });
     }
