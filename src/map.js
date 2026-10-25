@@ -34,13 +34,23 @@ export class MapEngine {
     const lat = this.currentCenter?.lat || 40.1776;
     const lng = this.currentCenter?.lng || 44.5126;
 
-    // Initialize Leaflet map with zoom 18 for clean graphical view
+    // Initialize Leaflet map with mobile touch and GPU stabilization
     this.map = L.map(this.containerId, {
       center: [lat, lng],
       zoom: 18,
       maxZoom: 19,
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
+      tap: false,                  // Fixes Leaflet mobile tap gesture conflict that causes touch jitter
+      touchZoom: true,
+      bounceAtZoomLimits: false,   // Prevents elastic rubber-banding jitter at zoom limits
+      wheelDebounceTime: 40,
+      inertia: true,
+      inertiaDeceleration: 3000,
+      inertiaMaxSpeed: 1500,
+      fadeAnimation: false,        // Tile fade during pan/zoom on mobile causes flashing/stutter
+      zoomAnimation: true,
+      markerZoomAnimation: true
     });
 
     // Apply OpenStreetMap tile layer
@@ -90,40 +100,42 @@ export class MapEngine {
     this.currentCenter = coords;
     if (!this.map) return;
 
+    // Smoothly update radius circle without tearing down DOM elements
     if (this.radiusCircle) {
-      this.map.removeLayer(this.radiusCircle);
+      this.radiusCircle.setLatLng([coords.lat, coords.lng]);
+      this.radiusCircle.setRadius(radiusMeters);
+    } else {
+      this.radiusCircle = L.circle([coords.lat, coords.lng], {
+        radius: radiusMeters,
+        color: '#7c3aed',
+        fillColor: '#8b5cf6',
+        fillOpacity: 0.08,
+        weight: 1.5,
+        dashArray: '5, 8'
+      }).addTo(this.map);
     }
+
+    // Smoothly update user marker position without tearing down DOM elements
     if (this.userMarker) {
-      this.map.removeLayer(this.userMarker);
-    }
-
-    // Telegram Live Location search boundary circle
-    this.radiusCircle = L.circle([coords.lat, coords.lng], {
-      radius: radiusMeters,
-      color: '#7c3aed',
-      fillColor: '#8b5cf6',
-      fillOpacity: 0.08,
-      weight: 1.5,
-      dashArray: '5, 8'
-    }).addTo(this.map);
-
-    // Telegram Signature Live Navigation Beacon with App Logo
-    const userIcon = L.divIcon({
-      className: 'tg-live-beacon-icon',
-      html: `
-        <div class="tg-live-beacon">
-          <div class="tg-beacon-ring"></div>
-          <div class="tg-beacon-ring tg-ring-delayed"></div>
-          <div class="tg-beacon-core">
-            <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
+      this.userMarker.setLatLng([coords.lat, coords.lng]);
+    } else {
+      const userIcon = L.divIcon({
+        className: 'tg-live-beacon-icon',
+        html: `
+          <div class="tg-live-beacon">
+            <div class="tg-beacon-ring"></div>
+            <div class="tg-beacon-ring tg-ring-delayed"></div>
+            <div class="tg-beacon-core">
+              <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
+            </div>
           </div>
-        </div>
-      `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
-    });
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
 
-    this.userMarker = L.marker([coords.lat, coords.lng], { icon: userIcon }).addTo(this.map);
+      this.userMarker = L.marker([coords.lat, coords.lng], { icon: userIcon }).addTo(this.map);
+    }
   }
 
   setLanguage(lang) {

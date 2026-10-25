@@ -209,6 +209,7 @@ class AppController {
   onRealLocationUpdated(coords) {
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
 
+    const isFirstTime = !this.currentCoords || !this.currentCoords.city;
     this.currentCoords = { lat: coords.lat, lng: coords.lng, city: coords.city, wifiId: coords.wifiId };
     if (this.currentLocationText) {
       const cityStr = coords.city ? ` (${coords.city})` : '';
@@ -216,7 +217,9 @@ class AppController {
     }
     if (this.mapEngine) {
       this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
-      this.mapEngine.recenter();
+      if (isFirstTime) {
+        this.mapEngine.recenter();
+      }
     }
     this.updatePeopleData();
   }
