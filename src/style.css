@@ -514,9 +514,9 @@ canvas#radar-canvas {
   background: var(--bg-primary);
 }
 
-/* OpenStreetMap Neumorphic Soft Tone Calibration */
+/* Neumorphic 3D Minimalist Map Palette Calibration (210° Cool Slate) */
 .leaflet-tile-pane {
-  filter: brightness(1.02) contrast(0.95) saturate(0.86);
+  filter: grayscale(0.95) brightness(1.06) contrast(0.88) sepia(0.15) hue-rotate(175deg);
   transition: filter 0.3s ease;
 }
 

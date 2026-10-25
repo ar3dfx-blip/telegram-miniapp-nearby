@@ -9,14 +9,7 @@ export const OPENSTREETMAP_STYLES = {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     maxZoom: 19,
     subdomains: ['a', 'b', 'c'],
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
-  },
-  'osm-humanitarian': {
-    name: 'OpenStreetMap Դետալային',
-    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    maxZoom: 19,
-    subdomains: ['a', 'b', 'c'],
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+    attribution: '© OpenStreetMap'
   }
 };
 
@@ -29,7 +22,7 @@ export class MapEngine {
     this.radiusCircle = null;
     this.markersGroup = null;
     this.currentCenter = null;
-    this.currentTheme = 'osm-standard'; // Official OpenStreetMap (https://www.openstreetmap.org/)
+    this.currentTheme = 'osm-standard';
     this.tileLayer = null;
   }
 
@@ -80,7 +73,7 @@ export class MapEngine {
   }
 
   toggleTheme() {
-    const modes = ['osm-standard', 'osm-humanitarian'];
+    const modes = ['carto-positron', 'carto-voyager', 'osm-standard'];
     const currentIndex = modes.indexOf(this.currentTheme);
     const nextIndex = (currentIndex + 1) % modes.length;
     const nextTheme = modes[nextIndex];
@@ -107,11 +100,11 @@ export class MapEngine {
     // Telegram Live Location search boundary circle
     this.radiusCircle = L.circle([coords.lat, coords.lng], {
       radius: radiusMeters,
-      color: '#945eff',
-      fillColor: '#945eff',
-      fillOpacity: 0.12,
-      weight: 2,
-      dashArray: '4, 6'
+      color: '#7c3aed',
+      fillColor: '#8b5cf6',
+      fillOpacity: 0.08,
+      weight: 1.5,
+      dashArray: '5, 8'
     }).addTo(this.map);
 
     // Telegram Signature Live Navigation Beacon with App Logo
