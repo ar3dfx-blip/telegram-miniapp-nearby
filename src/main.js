@@ -3,11 +3,9 @@ import { translations } from './translations.js';
 import { soundManager } from './audio.js';
 import {
   DEFAULT_COORDS,
-  getNearbyPeople,
   formatDistance,
   createAvatarSvg,
-  matchesSearchQuery,
-  createDynamicTelegramUser
+  matchesSearchQuery
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
@@ -85,6 +83,10 @@ class AppController {
           if (tgUser.username) {
             this.myProfile.username = tgUser.username;
           }
+          if (tgUser.photo_url) {
+            this.myProfile.avatarUrl = tgUser.photo_url;
+          }
+          this.myProfile.telegramId = tgUser.id;
 
           // Automatically set app language to match user's Telegram language
           if (tgUser.language_code) {
@@ -99,6 +101,13 @@ class AppController {
               this.currentLang = matched;
             }
           }
+        } else {
+          try {
+            const saved = JSON.parse(localStorage.getItem('tma_my_profile'));
+            if (saved && saved.name) {
+              this.myProfile = { ...this.myProfile, ...saved };
+            }
+          } catch (e) {}
         }
 
         // Telegram BackButton event
@@ -155,6 +164,9 @@ class AppController {
     this.chatEngine = new ChatEngine(this.viewPanels.chat, () => {
       this.switchTab(this.previousTab || 'list');
     });
+    if (this.realtimeService) {
+      this.chatEngine.setRealtimeService(this.realtimeService);
+    }
   }
 
   // Real-Time Peer & Live GPS Service Initialization
@@ -165,6 +177,9 @@ class AppController {
       (coords) => this.onRealLocationUpdated(coords)
     );
     this.realtimeService.connect();
+    if (this.chatEngine) {
+      this.chatEngine.setRealtimeService(this.realtimeService);
+    }
   }
 
   onRealLocationUpdated(coords) {
@@ -193,21 +208,18 @@ class AppController {
     this.updatePeopleData();
   }
 
-  // 4. Update data on coordinates/radius changes
+  // 4. Update data on coordinates/radius changes - 100% Real Peers Only
   updatePeopleData() {
-    const coords = this.currentCoords || DEFAULT_COORDS;
-    const nearbyTelegramUsers = getNearbyPeople(coords);
-
-    // Merge live connected peers if any
-    const livePeersMapped = this.realPeers.map(p => ({
+    // Pure real connected peers (Zero fake / mock profiles)
+    this.people = this.realPeers.map(p => ({
       id: p.id,
-      name: p.name,
-      username: p.username,
-      avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#24a1de', '#0088cc'], '👤'),
-      bio: p.status || 'Օնլայն իրական օգտատեր Telegram-ում',
+      name: p.name || 'Telegram User',
+      username: p.username || 'user',
+      avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], '👤'),
+      bio: p.bio || 'Օնլայն իրական օգտատեր Telegram-ում',
       interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby'],
       online: true,
-      distanceMeters: p.distanceMeters || 0.8,
+      distanceMeters: p.distanceMeters || 0,
       bearing: p.bearing !== undefined ? p.bearing : 0,
       lat: p.lat,
       lng: p.lng,
@@ -216,13 +228,6 @@ class AppController {
       telegramId: p.telegramId || null
     }));
 
-    // Deduplicate if any live peer shares same username
-    const liveUsernames = new Set(livePeersMapped.map(p => p.username));
-    const dedupedNearby = nearbyTelegramUsers.filter(u => !liveUsernames.has(u.username));
-
-    // Shows all Telegram users around real GPS location
-    this.people = [...livePeersMapped, ...dedupedNearby];
-
     this.applyFiltersAndSearch();
   }
 
@@ -230,32 +235,10 @@ class AppController {
     const q = this.searchQuery.toLowerCase().trim();
 
     if (q) {
-      // 1. Search Mode: Find matching person REGARDLESS of distance!
-      // Matches name, username, bio, and interests (including Armenian & Latin transliteration)
-      let matched = this.people.filter(p => matchesSearchQuery(p, this.searchQuery));
+      // Search ONLY among real connected peers
+      this.filteredPeople = this.people.filter(p => matchesSearchQuery(p, this.searchQuery));
 
-      // 2. If user searched for a custom name / @username with at least 2 characters
-      // and no exact match exists, dynamically instantiate a real Telegram profile!
-      const cleanQ = q.replace(/^@/, '');
-      if (cleanQ.length >= 2) {
-        const hasExact = matched.some(m => 
-          m.name.toLowerCase() === cleanQ || 
-          m.username.toLowerCase() === cleanQ ||
-          m.name.toLowerCase().includes(cleanQ) ||
-          m.username.toLowerCase().includes(cleanQ)
-        );
-        if (!hasExact) {
-          const dynamicUser = createDynamicTelegramUser(this.searchQuery, this.currentCoords || DEFAULT_COORDS);
-          if (!this.people.some(p => p.id === dynamicUser.id)) {
-            this.people.push(dynamicUser);
-          }
-          matched.unshift(dynamicUser);
-        }
-      }
-
-      this.filteredPeople = matched;
-
-      // Update radar & map to render searched people regardless of distance
+      // Update radar & map to render searched people
       if (this.radarEngine) {
         this.radarEngine.setPeople(this.filteredPeople, 99999999);
       }
@@ -263,23 +246,18 @@ class AppController {
         this.mapEngine.setPeople(this.filteredPeople, 99999999, true);
       }
     } else {
-      // Normal Proximity Radar Mode: strictly within current radius slider
+      // Proximity Radar Mode: strictly within current radius slider
       this.filteredPeople = this.people.filter(p => {
         if (p.distanceMeters > this.currentRadius) return false;
-
         if (this.activeFilter === 'online' && !p.online) return false;
-        if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
-        if (this.activeFilter === 'tech' && p.category !== 'tech') return false;
-        if (this.activeFilter === 'social' && p.category !== 'social') return false;
-
         return true;
       });
 
       if (this.radarEngine) {
-        this.radarEngine.setPeople(this.people, this.currentRadius);
+        this.radarEngine.setPeople(this.filteredPeople, this.currentRadius);
       }
       if (this.mapEngine) {
-        this.mapEngine.setPeople(this.people, this.currentRadius, false);
+        this.mapEngine.setPeople(this.filteredPeople, this.currentRadius, false);
       }
     }
 

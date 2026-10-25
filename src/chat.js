@@ -27,16 +27,11 @@ export class ChatEngine {
     } catch {}
   }
 
-  setWebSocket(ws) {
-    this.ws = ws;
-    if (this.ws) {
-      this.ws.addEventListener('message', (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'chat_message' && payload.fromId === this.activePerson?.id) {
-            this.appendIncomingMessage(payload.text);
-          }
-        } catch {}
+  setRealtimeService(service) {
+    this.realtimeService = service;
+    if (this.realtimeService) {
+      this.realtimeService.onChatMessage((msg) => {
+        this.handleIncomingPeerMessage(msg);
       });
     }
   }
@@ -58,20 +53,16 @@ export class ChatEngine {
       sender: 'me',
       text: cleanText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'read'
+      status: 'sent'
     };
 
     this.messages[this.activePerson.id].push(msg);
     this.saveHistory();
     soundManager.playSent();
 
-    // If WebSocket is open, send to peer
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'chat_message',
-        targetId: this.activePerson.id,
-        text: cleanText
-      }));
+    // Send real message to real peer
+    if (this.realtimeService) {
+      this.realtimeService.sendChatMessage(this.activePerson.id, cleanText);
     }
 
     this.renderMessages();
@@ -84,61 +75,31 @@ export class ChatEngine {
         origin: { y: 0.8 }
       });
     }
-
-    // Trigger realistic automated reply if mock user
-    this.simulatePeerReply(cleanText);
   }
 
-  appendIncomingMessage(text) {
-    if (!this.activePerson) return;
-    const msg = {
-      id: Date.now(),
+  handleIncomingPeerMessage(msg) {
+    if (!msg || !msg.fromId || !msg.text) return;
+    const senderId = msg.fromId;
+
+    if (!this.messages[senderId]) {
+      this.messages[senderId] = [];
+    }
+
+    const newMsg = {
+      id: msg.timestamp || Date.now(),
       sender: 'peer',
-      text: text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: msg.text,
+      time: new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'delivered'
     };
-    this.messages[this.activePerson.id].push(msg);
+
+    this.messages[senderId].push(newMsg);
     this.saveHistory();
     soundManager.playReceived();
-    this.renderMessages();
-  }
 
-  simulatePeerReply(userMessage) {
-    const person = this.activePerson;
-    if (!person) return;
-
-    // Show typing status after 600ms
-    setTimeout(() => {
-      this.setTypingIndicator(true);
-    }, 600);
-
-    // Realistic contextual Armenian answers
-    const replyDelay = 1500 + Math.random() * 1200;
-
-    setTimeout(() => {
-      this.setTypingIndicator(false);
-      let replyText = "Ողջույն! Հաճելի է ծանոթանալ 😊 Հենց նոր տեսա նամակդ:";
-
-      const lower = userMessage.toLowerCase();
-      if (lower.includes("սուրճ") || lower.includes("coffee")) {
-        replyText = `Անպայման! ${person.name.split(' ')[0]}-ն միշտ պատրաստ է լավ սուրճի ☕ Մոտակայքում հիանալի սրճարան կա, կարող ենք այնտեղ հանդիպել:`;
-      } else if (lower.includes("որտեղ") || lower.includes("դիրք") || lower.includes("where")) {
-        replyText = `Ես հենց հիմա գտնվում եմ Ձեզանից ընդամենը ${person.distanceMeters} մետր հեռավորության վրա: Շուտով կարող ենք տեսնվել 👋`;
-      } else if (lower.includes("գործ") || lower.includes("աշխատ") || lower.includes("tech") || lower.includes("ծրագր")) {
-        replyText = `Հիանալի է! Ես զբաղվում եմ ${person.interests[0]}-ով և ${person.interests[1] || 'նոր տեխնոլոգիաներով'}: Դու ինչո՞վ ես զբաղվում:`;
-      } else {
-        const fallbacks = [
-          `Ողջույն 👋 Հենց նոր նկատեցի Ձեզ ռադարում! Ինչպե՞ս եք:`,
-          `Շատ հաճելի է! Ես հենց մոտակայքում եմ, հիանալի օր է Երևանում զբոսնելու համար ☀️`,
-          `Այո, ակտիվ եմ! Ուրախ եմ նոր հետաքրքիր մարդկանց գտնելու այս մինիափփով 🚀`,
-          `Եթե ուզում ես անմիջապես Telegram-ում շարունակենք, իմ username-ն է @${person.username} 😉`
-        ];
-        replyText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      }
-
-      this.appendIncomingMessage(replyText);
-    }, replyDelay);
+    if (this.activePerson && this.activePerson.id === senderId) {
+      this.renderMessages();
+    }
   }
 
   setTypingIndicator(isTyping) {

@@ -1,5 +1,6 @@
-// Real-Time Peer Discovery & Live Geolocation Engine (Zero Mock Profiles)
-// Uses Real GPS + Cloud Realtime Pub/Sub + WebSockets for Live Multi-User Discovery
+// 100% Real Peer Discovery & Live Geolocation Engine
+// Uses Real Device GPS + Global Real-Time MQTT Network + Local Broadcast Channel
+import mqtt from 'mqtt';
 
 export function calculateHaversineMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000; // Earth radius in meters
@@ -10,7 +11,7 @@ export function calculateHaversineMeters(lat1, lon1, lat2, lon2) {
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return Math.round(R * c * 10) / 10;
 }
 
 export function calculateBearing(lat1, lon1, lat2, lon2) {
@@ -23,46 +24,49 @@ export function calculateBearing(lat1, lon1, lat2, lon2) {
 
 export class RealtimePeerService {
   constructor(myProfile, onPeersUpdate, onLocationChange) {
-    this.myProfile = myProfile;
+    this.myProfile = myProfile || {};
     this.onPeersUpdate = onPeersUpdate;
     this.onLocationChange = onLocationChange;
+    this.chatCallbacks = new Set();
 
-    this.livePeers = new Map(); // peerId -> peer object
-    this.ws = null;
-    this.gpsWatchId = null;
+    this.livePeers = new Map(); // peerId -> peer
     this.currentCoords = null;
-    this.heartbeatInterval = null;
-    this.pruneInterval = null;
-    this.broadcastChannel = null;
+    this.gpsWatchId = null;
+    this.heartbeatTimer = null;
+    this.pruneTimer = null;
 
-    // Public multi-user discovery channel for Telegram Mini App
-    this.channelTopic = 'tma-nearby-live-real-network-v1';
-    this.wsUrl = `wss://ntfy.sh/${this.channelTopic}/ws`;
-    this.pubUrl = `https://ntfy.sh/${this.channelTopic}`;
+    // Real-Time Network Channels
+    this.presenceTopic = 'tma_nearby/v3/presence';
+    this.chatPrefix = 'tma_nearby/v3/chat/';
 
-    // Unique session ID for current user
+    // Generate stable unique Peer ID for this session/device
     this.myPeerId = this.generatePeerId();
+
+    this.mqttClient = null;
+    this.broadcastChannel = null;
   }
 
   generatePeerId() {
+    // If running in Telegram, use Telegram User ID
     const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
     if (tgId) return `tg_${tgId}`;
+
     let saved = localStorage.getItem('tma_real_peer_id');
     if (!saved) {
-      saved = 'peer_' + Math.random().toString(36).substring(2, 10);
+      saved = 'real_' + Math.random().toString(36).substring(2, 10);
       localStorage.setItem('tma_real_peer_id', saved);
     }
     return saved;
   }
 
-  // 1. Initialize Real GPS Tracking
+  // 1. Real Device GPS Tracking
   startLocationTracking() {
     const onPos = (position) => {
       const { latitude, longitude, accuracy } = position.coords;
       this.currentCoords = {
         lat: latitude,
         lng: longitude,
-        accuracy: accuracy || 5,
+        accuracy: accuracy ? Math.round(accuracy) : 5,
         timestamp: Date.now()
       };
 
@@ -70,12 +74,12 @@ export class RealtimePeerService {
         this.onLocationChange(this.currentCoords);
       }
 
-      // Broadcast my real position to other nearby peers
-      this.broadcastMyPresence();
+      // Broadcast real position immediately
+      this.broadcastPresence();
     };
 
     const onErr = (err) => {
-      console.warn("GPS Location notice:", err.message);
+      console.warn("GPS Tracking notice:", err.message);
       if (this.onLocationChange && !this.currentCoords) {
         this.onLocationChange({ error: true, code: err.code, message: err.message });
       }
@@ -103,141 +107,154 @@ export class RealtimePeerService {
       console.warn("Telegram LocationManager notice:", e);
     }
 
-    if (!navigator.geolocation) {
-      console.warn("Geolocation is not supported by this browser.");
-      if (this.onLocationChange) {
-        this.onLocationChange({ error: true, message: "Geolocation not supported" });
+    if (navigator.geolocation) {
+      if (this.gpsWatchId) {
+        navigator.geolocation.clearWatch(this.gpsWatchId);
       }
-      return;
+
+      navigator.geolocation.getCurrentPosition(onPos, onErr, {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+      });
+
+      this.gpsWatchId = navigator.geolocation.watchPosition(onPos, onErr, {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+      });
     }
-
-    if (this.gpsWatchId) {
-      navigator.geolocation.clearWatch(this.gpsWatchId);
-    }
-
-    // Immediate fix
-    navigator.geolocation.getCurrentPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      maximumAge: 1000,
-      timeout: 10000
-    });
-
-    // Continuous watch for real movements
-    this.gpsWatchId = navigator.geolocation.watchPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      maximumAge: 1000,
-      timeout: 10000
-    });
   }
 
-  // 2. Start Realtime Cloud WebSocket & Local Channel
+  // 2. Connect to Realtime Network
   connect() {
     this.startLocationTracking();
-    this.initWebSocket();
+    this.initMqtt();
     this.initBroadcastChannel();
 
-    // Heartbeat every 4 seconds to announce real presence
-    this.heartbeatInterval = setInterval(() => {
-      this.broadcastMyPresence();
-    }, 4000);
-
-    // Prune stale peers who haven't updated in 12 seconds
-    this.pruneInterval = setInterval(() => {
-      this.pruneStalePeers();
+    // Regular heartbeat every 3 seconds
+    this.heartbeatTimer = setInterval(() => {
+      this.broadcastPresence();
     }, 3000);
+
+    // Prune peers inactive for > 10 seconds
+    this.pruneTimer = setInterval(() => {
+      this.pruneStalePeers();
+    }, 2500);
   }
 
   initBroadcastChannel() {
     try {
       if (typeof BroadcastChannel !== 'undefined') {
-        this.broadcastChannel = new BroadcastChannel('tma_nearby_real_peers');
+        this.broadcastChannel = new BroadcastChannel('tma_nearby_real_channel');
         this.broadcastChannel.onmessage = (event) => {
-          if (event.data && event.data.peer) {
-            this.handleIncomingPeer(event.data.peer);
+          const data = event.data;
+          if (!data) return;
+
+          if (data.type === 'presence' && data.peer) {
+            this.handleIncomingPeer(data.peer);
+          } else if (data.type === 'chat_message' && data.toId === this.myPeerId) {
+            this.handleIncomingChatMessage(data);
           }
         };
       }
     } catch (e) {
-      console.warn("BroadcastChannel error:", e);
+      console.warn("BroadcastChannel notice:", e);
     }
   }
 
-  initWebSocket() {
-    try {
-      this.ws = new WebSocket(this.wsUrl);
+  initMqtt() {
+    const brokers = [
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://broker.hivemq.com:8884/mqtt'
+    ];
+    let brokerIndex = 0;
 
-      this.ws.onopen = () => {
-        console.log("🟢 Connected to Realtime Cloud Peer Network!");
-        this.broadcastMyPresence();
-      };
+    const tryConnect = () => {
+      const url = brokers[brokerIndex];
+      try {
+        this.mqttClient = mqtt.connect(url, {
+          clientId: `tma_${this.myPeerId}_${Math.random().toString(16).slice(2, 8)}`,
+          clean: true,
+          connectTimeout: 5000,
+          reconnectPeriod: 3000
+        });
 
-      this.ws.onmessage = (evt) => {
-        try {
-          const packet = JSON.parse(evt.data);
-          if (packet.event === 'message' && packet.message) {
-            const data = typeof packet.message === 'string' ? JSON.parse(packet.message) : packet.message;
-            if (data && data.type === 'peer_presence' && data.peer) {
+        this.mqttClient.on('connect', () => {
+          console.log(`🌐 Realtime MQTT connected to ${url}`);
+
+          // Subscribe to presence
+          this.mqttClient.subscribe(this.presenceTopic, { qos: 0 });
+
+          // Subscribe to my direct incoming chat channel
+          const myChatTopic = `${this.chatPrefix}${this.myPeerId}`;
+          this.mqttClient.subscribe(myChatTopic, { qos: 1 });
+
+          this.broadcastPresence();
+        });
+
+        this.mqttClient.on('message', (topic, payload) => {
+          try {
+            const data = JSON.parse(payload.toString());
+            if (topic === this.presenceTopic && data.peer) {
               this.handleIncomingPeer(data.peer);
+            } else if (topic.startsWith(this.chatPrefix)) {
+              this.handleIncomingChatMessage(data);
             }
-          }
-        } catch (e) {
-          // Ignore non-json packets
-        }
-      };
+          } catch (e) {}
+        });
 
-      this.ws.onerror = (e) => {
-        console.warn("Realtime WebSocket notice:", e);
-      };
+        this.mqttClient.on('error', (err) => {
+          console.warn(`MQTT connection notice on ${url}:`, err.message);
+          this.mqttClient.end();
+          brokerIndex = (brokerIndex + 1) % brokers.length;
+          setTimeout(tryConnect, 3000);
+        });
+      } catch (err) {
+        console.warn("MQTT setup error:", err);
+      }
+    };
 
-      this.ws.onclose = () => {
-        // Auto-reconnect after 3 seconds
-        setTimeout(() => this.initWebSocket(), 3000);
-      };
-    } catch (err) {
-      console.warn("Failed to connect to realtime WS:", err);
-    }
+    tryConnect();
   }
 
-  // Broadcast real user profile and real GPS coordinates
-  broadcastMyPresence() {
+  // 3. Broadcast My Presence
+  broadcastPresence() {
     if (!this.currentCoords) return;
 
-    const payload = {
+    const peerData = {
       id: this.myPeerId,
       name: this.myProfile.name || 'Telegram User',
       username: this.myProfile.username || 'user',
       avatarUrl: this.myProfile.avatarUrl || null,
-      status: this.myProfile.status || 'Օնլայն',
+      bio: this.myProfile.status || 'Օնլայն Telegram-ում',
       lat: this.currentCoords.lat,
       lng: this.currentCoords.lng,
-      lastSeen: Date.now(),
-      online: true,
-      interests: this.myProfile.interests || []
+      accuracy: this.currentCoords.accuracy || 5,
+      timestamp: Date.now(),
+      online: true
     };
 
-    // 1. Post to local BroadcastChannel (cross-tab/cross-window)
+    // Broadcast locally across browser tabs
     if (this.broadcastChannel) {
       try {
-        this.broadcastChannel.postMessage({ peer: payload });
+        this.broadcastChannel.postMessage({ type: 'presence', peer: peerData });
       } catch (e) {}
     }
 
-    // 2. Publish to cloud Pub/Sub for other remote devices
-    fetch(this.pubUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        type: 'peer_presence',
-        peer: payload
-      }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }).catch(() => {});
+    // Broadcast globally via MQTT
+    if (this.mqttClient && this.mqttClient.connected) {
+      this.mqttClient.publish(
+        this.presenceTopic,
+        JSON.stringify({ type: 'presence', peer: peerData }),
+        { qos: 0 }
+      );
+    }
   }
 
   handleIncomingPeer(peer) {
     if (!peer || !peer.id) return;
-    if (peer.id === this.myPeerId) return; // Do not add self as nearby peer
+    if (peer.id === this.myPeerId) return; // Do not include self in nearby peer list
 
     if (this.currentCoords && peer.lat && peer.lng) {
       peer.distanceMeters = calculateHaversineMeters(
@@ -257,24 +274,68 @@ export class RealtimePeerService {
       peer.bearing = 0;
     }
 
-    peer.receivedAt = Date.now();
+    peer.lastSeenAt = Date.now();
     this.livePeers.set(peer.id, peer);
     this.notifyPeersUpdate();
   }
 
+  // 4. Send & Receive Real Chat Messages
+  sendChatMessage(targetId, text) {
+    if (!targetId || !text || !text.trim()) return;
+
+    const payload = {
+      type: 'chat_message',
+      fromId: this.myPeerId,
+      fromName: this.myProfile.name || 'Telegram User',
+      fromUsername: this.myProfile.username || 'user',
+      toId: targetId,
+      text: text.trim(),
+      timestamp: Date.now()
+    };
+
+    // 1. Broadcast locally
+    if (this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage(payload);
+      } catch (e) {}
+    }
+
+    // 2. Send via MQTT to target's direct topic
+    if (this.mqttClient && this.mqttClient.connected) {
+      const targetTopic = `${this.chatPrefix}${targetId}`;
+      this.mqttClient.publish(targetTopic, JSON.stringify(payload), { qos: 1 });
+    }
+  }
+
+  onChatMessage(callback) {
+    if (typeof callback === 'function') {
+      this.chatCallbacks.add(callback);
+    }
+  }
+
+  handleIncomingChatMessage(msg) {
+    this.chatCallbacks.forEach(cb => {
+      try {
+        cb(msg);
+      } catch (e) {
+        console.error("Error in chat callback:", e);
+      }
+    });
+  }
+
   pruneStalePeers() {
     const now = Date.now();
-    let changed = false;
+    let removed = false;
 
     this.livePeers.forEach((peer, id) => {
-      // Disconnect if no message received in 12s
-      if (now - peer.receivedAt > 12000) {
+      // If no heartbeat for > 10 seconds, remove from active radar
+      if (now - (peer.lastSeenAt || 0) > 10000) {
         this.livePeers.delete(id);
-        changed = true;
+        removed = true;
       }
     });
 
-    if (changed) {
+    if (removed) {
       this.notifyPeersUpdate();
     }
   }
@@ -282,7 +343,6 @@ export class RealtimePeerService {
   notifyPeersUpdate() {
     if (this.onPeersUpdate) {
       const list = Array.from(this.livePeers.values());
-      // Re-calculate distances and bearings if current coords available
       if (this.currentCoords) {
         list.forEach(p => {
           p.distanceMeters = calculateHaversineMeters(
@@ -304,12 +364,10 @@ export class RealtimePeerService {
   }
 
   disconnect() {
-    if (this.gpsWatchId) {
-      navigator.geolocation.clearWatch(this.gpsWatchId);
-    }
-    if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-    if (this.pruneInterval) clearInterval(this.pruneInterval);
-    if (this.ws) this.ws.close();
+    if (this.gpsWatchId) navigator.geolocation.clearWatch(this.gpsWatchId);
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    if (this.pruneTimer) clearInterval(this.pruneTimer);
+    if (this.mqttClient) this.mqttClient.end();
     if (this.broadcastChannel) this.broadcastChannel.close();
   }
 }
