@@ -200,7 +200,7 @@ export class MapEngine {
       }).setHTML(`
         <div class="tg-map-tooltip">
           <div class="tg-tt-name">${person.name}</div>
-          <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? '🟢 Օնլայն' : person.lastSeen}</div>
+          <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? '🟢 Առցանց' : person.lastSeen}</div>
         </div>
       `);
 

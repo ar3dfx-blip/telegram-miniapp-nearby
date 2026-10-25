@@ -232,7 +232,7 @@ class AppController {
       name: p.name || 'Telegram User',
       username: p.username || 'user',
       avatarUrl: p.avatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], '👤'),
-      bio: p.bio || (p.isSameWifi ? 'Միացված է նույն WiFi ցանցին 📶' : 'Օնլայն իրական օգտատեր Telegram-ում'),
+      bio: p.bio || (p.isSameWifi ? 'Միացված է նույն WiFi ցանցին 📶' : 'Առցանց իրական օգտատեր Telegram-ում'),
       interests: p.interests && p.interests.length ? p.interests : (p.isSameWifi ? ['WiFi', 'Nearby', 'Telegram'] : ['Telegram', 'Nearby']),
       online: true,
       distanceMeters: p.distanceMeters || 0,

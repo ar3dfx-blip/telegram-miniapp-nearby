@@ -247,7 +247,7 @@ export class RealtimePeerService {
       name: this.myProfile.name || 'Telegram User',
       username: this.myProfile.username || 'user',
       avatarUrl: this.myProfile.avatarUrl || null,
-      bio: this.myProfile.status || 'Օնլայն WiFi-ում',
+      bio: this.myProfile.status || 'Առցանց WiFi-ում',
       wifiId: this.myWifiId,
       wifiIp: this.myPublicIp,
       city: this.myWifiCity,

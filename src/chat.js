@@ -140,7 +140,7 @@ export class ChatEngine {
             <div class="chat-header-info">
               <div class="chat-header-name">${p.name} ${p.statusEmoji || ''}</div>
               <div class="chat-header-status">
-                <span class="chat-dist-tag">📍 ${p.distanceMeters} մետր</span> • ${p.online ? 'Օնլայն' : p.lastSeen}
+                <span class="chat-dist-tag">📍 ${p.distanceMeters} մետր</span> • ${p.online ? 'Առցանց' : p.lastSeen}
               </div>
             </div>
           </div>
