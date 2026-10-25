@@ -21,8 +21,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script type="module" crossorigin src="./assets/index-CS0KU4A2.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DOfMxuIW.css">
+    <script type="module" crossorigin src="./assets/index-B6JiZANH.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CUuz-y0x.css">
   </head>
   <body>
     <div id="app">
@@ -53,23 +53,6 @@
               </svg>
             </button>
           </div>
-        </div>
-
-        <!-- WiFi Local Network Banner -->
-        <div class="location-banner live-gps-banner">
-          <div class="location-info">
-            <span class="tg-live-dot" style="margin-right: 6px;"></span>
-            <span id="current-location-text">📶 WiFi ցանց՝ Ակտիվ է</span>
-          </div>
-          <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել WiFi-ը" style="display:flex; align-items:center; gap:5px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-              <circle cx="12" cy="20" r="1" fill="currentColor"/>
-            </svg>
-            <span id="t-gps-refresh-label">WiFi Live</span>
-          </button>
         </div>
       </header>
 
@@ -103,6 +86,21 @@
               </div>
               <div class="stat-badge">
                 <span id="radar-count-total">0 մարդ</span>
+              </div>
+              <div class="location-banner live-gps-banner radar-wifi-banner">
+                <div class="location-info">
+                  <span class="tg-live-dot" style="margin-right: 6px;"></span>
+                  <span id="current-location-text">📶 WiFi ցանց՝ Ակտիվ է</span>
+                </div>
+                <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել WiFi-ը" style="display:flex; align-items:center; gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                    <circle cx="12" cy="20" r="1" fill="currentColor"/>
+                  </svg>
+                  <span id="t-gps-refresh-label">WiFi Live</span>
+                </button>
               </div>
             </div>
           </div>
