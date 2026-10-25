@@ -422,20 +422,9 @@ class AppController {
 
   // 6. View Tabs Switching
   switchTab(tabName) {
-    if (tabName === 'list') {
+    if (tabName === 'profile') {
       soundManager.triggerHaptic('light');
-      if (this.activeTab !== 'radar') {
-        this.switchTab('radar');
-      }
-      setTimeout(() => {
-        const listSection = document.getElementById('radar-list-section');
-        if (listSection) {
-          listSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 50);
-      this.tabButtons.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === 'list');
-      });
+      this.openSettingsModal();
       return;
     }
 
@@ -613,6 +602,22 @@ class AppController {
     return `${str} մետր`;
   }
 
+  openSettingsModal() {
+    soundManager.playTap();
+    const nameInput = document.getElementById('my-name-input');
+    const statusInput = document.getElementById('my-status-input');
+    const toggleVisible = document.getElementById('toggle-visible');
+    const toggleGhost = document.getElementById('toggle-ghost');
+    const realToggle = document.getElementById('toggle-real-mode');
+
+    if (nameInput) nameInput.value = this.myProfile.name;
+    if (statusInput) statusInput.value = this.myProfile.status;
+    if (toggleVisible) toggleVisible.checked = this.myProfile.visible;
+    if (toggleGhost) toggleGhost.checked = this.myProfile.ghost;
+    if (realToggle) realToggle.checked = this.isRealMode;
+    if (this.settingsDialog) this.settingsDialog.showModal();
+  }
+
   // 9. Setup Event Listeners
   setupEventListeners() {
     // Navigation Tabs
@@ -621,22 +626,6 @@ class AppController {
         this.switchTab(btn.dataset.tab);
       });
     });
-
-    // Scroll listener on Radar view to sync active footer tab (Radar vs List)
-    window.addEventListener('scroll', () => {
-      if (this.activeTab !== 'radar') return;
-      const listSection = document.getElementById('radar-list-section');
-      if (!listSection) return;
-      const rect = listSection.getBoundingClientRect();
-      const inList = rect.top <= window.innerHeight * 0.45;
-      this.tabButtons.forEach(btn => {
-        if (btn.dataset.tab === 'list') {
-          btn.classList.toggle('active', inList);
-        } else if (btn.dataset.tab === 'radar') {
-          btn.classList.toggle('active', !inList);
-        }
-      });
-    }, { passive: true });
 
     // Radar Radius Slider
     if (this.radarSlider) {
@@ -706,20 +695,14 @@ class AppController {
     }
 
     // Settings Modal
-    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const openSettingsBtn = document.getElementById('tab-profile-btn') || document.getElementById('open-settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const realToggle = document.getElementById('toggle-real-mode');
 
     if (openSettingsBtn) {
       openSettingsBtn.addEventListener('click', () => {
-        soundManager.playTap();
-        document.getElementById('my-name-input').value = this.myProfile.name;
-        document.getElementById('my-status-input').value = this.myProfile.status;
-        document.getElementById('toggle-visible').checked = this.myProfile.visible;
-        document.getElementById('toggle-ghost').checked = this.myProfile.ghost;
-        if (realToggle) realToggle.checked = this.isRealMode;
-        this.settingsDialog.showModal();
+        this.openSettingsModal();
       });
     }
 
@@ -800,7 +783,10 @@ class AppController {
     if (subEl) subEl.textContent = t.appSubtitle;
     document.getElementById('t-tab-radar').textContent = t.tabRadar;
     document.getElementById('t-tab-map').textContent = t.tabMap;
-    document.getElementById('t-tab-list').textContent = t.tabList;
+    const tabProfileEl = document.getElementById('t-tab-profile');
+    if (tabProfileEl) tabProfileEl.textContent = t.tabProfile || 'Պրոֆիլ';
+    const tabListEl = document.getElementById('t-tab-list');
+    if (tabListEl) tabListEl.textContent = t.tabList;
     const radiusLabel = document.getElementById('t-radius-label');
     if (radiusLabel) radiusLabel.textContent = `${t.radius}՝`;
 
