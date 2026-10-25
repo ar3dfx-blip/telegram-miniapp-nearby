@@ -468,9 +468,18 @@ canvas#radar-canvas {
 
 .radar-stats-pills {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-top: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.radar-stats-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .stat-badge {
@@ -478,17 +487,58 @@ canvas#radar-canvas {
   align-items: center;
   gap: 6px;
   background: var(--bg-primary);
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 500;
   color: var(--text-dark);
   box-shadow: var(--neu-flat-sm);
   border: 1px solid rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stat-badge.online-stat {
   color: #059669;
+}
+
+.radar-wifi-banner {
+  margin-top: 0 !important;
+  padding: 5px 10px 5px 12px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 12px !important;
+  box-shadow: var(--neu-inset-sm) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  background: var(--bg-primary);
+}
+
+.radar-wifi-banner .location-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+
+.radar-wifi-banner .location-change-btn {
+  padding: 4px 9px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  box-shadow: var(--neu-flat-sm);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: var(--bg-primary);
+  color: var(--accent-primary);
+  cursor: pointer;
 }
 
 /* ==========================================================================

@@ -444,11 +444,6 @@ class AppController {
       }
     });
 
-    // Hide real GPS info banner on map and chat views
-    const liveGpsBanner = document.querySelector('.live-gps-banner');
-    if (liveGpsBanner) {
-      liveGpsBanner.style.display = (tabName === 'map' || tabName === 'chat') ? 'none' : 'flex';
-    }
 
     // Hide floating footer navbar when in full 1-on-1 chat
     if (this.mainNavTabs) {
