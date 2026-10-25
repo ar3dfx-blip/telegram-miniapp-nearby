@@ -33,7 +33,7 @@ export class MapEngine {
     this.tileLayer = null;
   }
 
-  init(centerCoords, initialRadius = 10) {
+  init(centerCoords, initialRadius = 50) {
     this.currentCenter = centerCoords || { lat: 40.1776, lng: 44.5126 };
     const container = document.getElementById(this.containerId);
     if (!container) return;

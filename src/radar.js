@@ -8,7 +8,7 @@ export class RadarEngine {
     this.onSelectPerson = onSelectPerson;
 
     this.people = [];
-    this.maxRadiusMeters = 10;
+    this.maxRadiusMeters = 50;
     this.lang = 'hy';
     this.angle = 0; // Sweep angle in radians
     this.sweepSpeed = 0.025; // Rotation speed

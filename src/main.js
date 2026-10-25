@@ -17,7 +17,7 @@ class AppController {
   constructor() {
     this.currentLang = this.detectTelegramLanguage();
     this.currentCoords = null;
-    this.currentRadius = 10;
+    this.currentRadius = 50;
     this.activeTab = 'radar';
     this.activeFilter = 'all';
     this.searchQuery = '';
@@ -575,7 +575,7 @@ class AppController {
     if (this.radarSlider) {
       this.radarSlider.addEventListener('input', (e) => {
         this.currentRadius = parseFloat(e.target.value);
-        this.radarRangeDisplay.textContent = `${this.currentRadius} մետր`;
+        this.radarRangeDisplay.textContent = formatDistance(this.currentRadius, this.currentLang);
         if (this.radarEngine) this.radarEngine.setMaxRadius(this.currentRadius);
         if (this.mapEngine) this.mapEngine.updateRadius(this.currentRadius);
         this.applyFiltersAndSearch();
@@ -853,7 +853,7 @@ class AppController {
 
   shareAppWithFriends() {
     const shareUrl = "https://ar3dfx-blip.github.io/telegram-miniapp-nearby/";
-    const text = "Միացեք ինձ Telegram Mini App-ում՝ մոտակա կապ հաստատելու համար (0.5մ - 10մ):";
+    const text = "Միացեք ինձ Telegram Mini App-ում՝ մոտակա կապ հաստատելու համար (0.5մ - 100մ):";
     const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
 
     const tg = window.Telegram?.WebApp;
