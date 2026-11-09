@@ -2336,10 +2336,10 @@ input:checked + .slider-round:before {
 }
 
 #pay-ghost-stars-btn {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+  background: linear-gradient(135deg, var(--accent-coral), var(--accent-coral-light)) !important;
   color: #ffffff !important;
   font-weight: 700;
-  box-shadow: var(--neu-btn-purple) !important;
+  box-shadow: var(--neu-btn-accent) !important;
   border: none;
   border-radius: 16px;
   padding: 13px 20px;
@@ -2350,7 +2350,7 @@ input:checked + .slider-round:before {
 
 #pay-ghost-stars-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(148, 94, 255, 0.45) !important;
+  box-shadow: 0 6px 18px rgba(255, 94, 94, 0.45) !important;
 }
 
 #pay-ghost-stars-btn:active {
