@@ -1851,13 +1851,18 @@ class AppController {
     this.syncGhostStatusWithSub();
     this.updateGhostBadgeUI();
 
+    const heroCardEl = document.getElementById('profile-page-hero-card');
     const avatarEl = document.getElementById('profile-page-avatar');
     const nameEl = document.getElementById('profile-page-display-name');
     const handleEl = document.getElementById('profile-page-display-handle');
     const phoneEl = document.getElementById('profile-page-display-phone');
 
+    const avatarUrl = this.myProfile.avatarUrl || './logo.png';
     if (avatarEl) {
-      avatarEl.src = this.myProfile.avatarUrl || './logo.png';
+      avatarEl.src = avatarUrl;
+    }
+    if (heroCardEl) {
+      heroCardEl.style.backgroundImage = `url("${avatarUrl}")`;
     }
     if (nameEl) {
       nameEl.textContent = this.myProfile.name || 'Telegram User';

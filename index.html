@@ -103,20 +103,6 @@
 
           <!-- 3. LIST SECTION UNDER RADAR -->
           <div class="radar-list-section" id="radar-list-section">
-            <!-- Search box -->
-            <div class="search-box-wrapper">
-              <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                type="text"
-                id="list-search-input"
-                class="search-input"
-                placeholder="Փնտրել անունով, հետաքրքրություններով..."
-              />
-            </div>
-
             <!-- Filter Pills -->
             <div class="filter-pills-row" id="filter-pills">
               <button class="filter-pill active" data-filter="all" id="pill-all">Բոլորը</button>
@@ -156,11 +142,9 @@
         <!-- 5. PROFILE & ACCOUNT VIEW (Full Page View) -->
         <section id="profile-view" class="profile-view-container" style="display:none; flex:1; flex-direction:column; padding: 14px 14px 100px 14px; overflow-y:auto;">
           
-          <!-- Profile Hero Card -->
-          <div class="profile-page-hero-card">
-            <div class="profile-hero-avatar-wrap">
-              <img id="profile-page-avatar" src="./logo.png" alt="Profile" class="profile-page-avatar-img" />
-            </div>
+          <!-- Profile Hero Card with user picture as background -->
+          <div class="profile-page-hero-card" id="profile-page-hero-card">
+            <div class="profile-page-hero-overlay"></div>
             <div class="profile-page-meta">
               <h2 id="profile-page-display-name" class="profile-page-name">Tigran</h2>
               <div id="profile-page-display-handle" class="profile-page-handle">@TigranBagavan</div>

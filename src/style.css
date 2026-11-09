@@ -1238,13 +1238,16 @@ html, body {
   box-shadow: var(--neu-inset-deep), 0 0 0 2px rgba(148, 94, 255, 0.25);
 }
 
-/* Filter Pills (Neumorphic Toggle Pills) */
+/* Filter Pills (Neumorphic Toggle Pills - Centered) */
 .filter-pills-row {
   display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 10px;
   overflow-x: auto;
   padding: 4px 2px;
   scrollbar-width: none;
+  width: 100%;
 }
 
 .filter-pills-row::-webkit-scrollbar {
@@ -2186,56 +2189,63 @@ input:checked + .slider-round:before {
 }
 
 .profile-page-hero-card {
+  position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
   text-align: center;
-  padding: 24px 20px 20px 20px;
-  background: var(--neu-bg);
+  min-height: 240px;
+  background-color: var(--neu-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 26px;
   box-shadow: var(--neu-flat-md);
   margin-bottom: 16px;
   border: 1px solid rgba(255, 255, 255, 0.65);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.profile-hero-avatar-wrap {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  padding: 4px;
-  background: var(--neu-bg);
-  box-shadow: var(--neu-inset-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
+.profile-page-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.35) 55%, rgba(15, 23, 42, 0.1) 100%);
+  pointer-events: none;
+  z-index: 1;
 }
 
-.profile-page-avatar-img {
+.profile-page-meta {
+  position: relative;
+  z-index: 2;
   width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+  padding: 24px 20px 20px 20px;
+  box-sizing: border-box;
 }
 
 .profile-page-name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  color: var(--text-dark);
+  color: #ffffff;
   margin: 0 0 4px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  letter-spacing: -0.3px;
 }
 
 .profile-page-handle {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--accent-primary);
+  color: var(--accent-coral-light, #ff7b7b);
   margin-bottom: 3px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .profile-page-phone {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-medium);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .profile-page-section-card {
