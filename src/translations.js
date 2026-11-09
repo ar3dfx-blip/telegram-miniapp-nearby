@@ -67,7 +67,8 @@ export const translations = {
     qipsUsersTitle: "Քփեր",
     qipsBtnAction: "ՔԻՓՍ",
     tgContactsTitle: "Կոնտակտներ",
-    qipsUsersBadge: "օգտատեր"
+    qipsUsersBadge: "օգտատեր",
+    btnQpvel: "Քփվել"
   },
   en: {
     appTitle: "Qips",
@@ -136,6 +137,7 @@ export const translations = {
     qipsUsersTitle: "Qper",
     qipsBtnAction: "QIPS",
     tgContactsTitle: "Contacts",
-    qipsUsersBadge: "users"
+    qipsUsersBadge: "users",
+    btnQpvel: "Qpvel"
   }
 };

@@ -1,7 +1,9 @@
 // Telegram Bot Controller for @QipsBot (https://t.me/QipsBot)
-// Handles /start, Telegram Stars (XTR) Ghost Mode Payments (50 XTR for +374, 500 XTR for others),
-// Anonymous Invitations, and Mutual "Դարձիր Քիփս" Notifications.
+// Handles /start, Anonymous Invitations, Mutual Qips Notifications,
+// and silent profile phone registration (Ghost Mode payment is initiated strictly inside the Mini App).
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 dotenv.config();
 
 const _b1 = '9102883915';
@@ -12,6 +14,25 @@ const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 // Store known users by username -> chatId for anonymous invitations
 const knownBotUsers = new Map();
+
+// Persisted user profiles (userId -> { phone, firstName, username, updatedAt })
+const DATA_DIR = path.resolve('./data');
+const PROFILES_FILE = path.join(DATA_DIR, 'user_profiles.json');
+let userProfiles = new Map();
+try {
+  if (fs.existsSync(PROFILES_FILE)) {
+    const raw = fs.readFileSync(PROFILES_FILE, 'utf-8');
+    userProfiles = new Map(Object.entries(JSON.parse(raw)));
+  }
+} catch (e) {}
+
+function saveUserProfiles() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    const obj = Object.fromEntries(userProfiles.entries());
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+  } catch (e) {}
+}
 
 async function telegramRequest(method, payload) {
   const res = await fetch(`${API_BASE}/${method}`, {
@@ -51,8 +72,8 @@ async function startBot() {
   await telegramRequest('setMyCommands', {
     commands: [
       { command: 'start', description: '🚀 Բացել Քիփս (Qips) հավելվածը' },
-      { command: 'ghost', description: '👻 Ghost Mode բաժանորդագրություն (Telegram Stars)' },
-      { command: 'invite', description: 'Ուղարկել անանուն հրավեր կոնտակտին' }
+      { command: 'ghost', description: '👻 Ghost Mode (Թաքնված ռեժիմ)' },
+      { command: 'invite', description: 'Ուղարկել հրավեր կոնտակտին' }
     ]
   });
 
@@ -110,22 +131,52 @@ async function startBot() {
             continue;
           }
 
-          // 3. Handle Shared Contact for Phone Country Code Verification (+374 vs International)
+          // 3. Handle Shared Contact (Store SILENTLY in user's profile, NO SCARY INVOICES IN CHAT)
           if (msg.contact) {
             const phone = msg.contact.phone_number || '';
-            const isArm = isArmenianPhoneNumber(phone);
-            const stars = isArm ? 50 : 500;
+            const normalizedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+            const userId = String(msg.from?.id || chatId);
 
-            await telegramRequest('sendInvoice', {
+            userProfiles.set(userId, {
+              phone: normalizedPhone,
+              firstName,
+              username: msg.from?.username || '',
+              updatedAt: Date.now()
+            });
+            saveUserProfiles();
+
+            const userWebAppUrl = `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}phone=${encodeURIComponent(normalizedPhone)}`;
+
+            // Silently update the Menu Button for this user with their verified phone
+            try {
+              await telegramRequest('setChatMenuButton', {
+                chat_id: chatId,
+                menu_button: {
+                  type: 'web_app',
+                  text: 'Քիփս',
+                  web_app: { url: userWebAppUrl }
+                }
+              });
+            } catch (e) {}
+
+            // Send a warm, friendly confirmation (NO scary invoice, NO payment prompt)
+            await telegramRequest('sendMessage', {
               chat_id: chatId,
-              title: 'Ghost Mode (Թաքնված ռեժիմ) — 1 Ամիս',
-              description: isArm
-                ? `Հաստատված է հայկական համար (+${phone.replace(/^\+/, '')}) • Ամսական 50 ⭐️ Telegram Stars`
-                : `Միջազգային համար (+${phone.replace(/^\+/, '')}) • Ամսական 500 ⭐️ Telegram Stars`,
-              payload: `ghost_mode_${stars}_${chatId}_${Date.now()}`,
-              provider_token: '',
-              currency: 'XTR',
-              prices: [{ label: 'Ghost Mode (1 ամիս)', amount: stars }]
+              text:
+                `👋 Շնորհակալություն, *${firstName}*։ Ձեր պրոֆիլը կարգավորված է։\n\n` +
+                `Սեղմեք ներքևի կոճակը հավելվածը բացելու համար 👇`,
+              parse_mode: 'Markdown',
+              reply_markup: {
+                remove_keyboard: true,
+                inline_keyboard: [
+                  [
+                    {
+                      text: '🚀 Բացել Քիփս (Qips)',
+                      web_app: { url: userWebAppUrl }
+                    }
+                  ]
+                ]
+              }
             });
             continue;
           }
@@ -133,23 +184,28 @@ async function startBot() {
           // 4. Handle Text Commands
           if (msg.text) {
             if (msg.text.startsWith('/start')) {
+              const savedUser = userProfiles.get(String(chatId));
+              const userWebAppUrl = savedUser?.phone
+                ? `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}phone=${encodeURIComponent(savedUser.phone)}`
+                : WEBAPP_URL;
+
               await telegramRequest('sendMessage', {
                 chat_id: chatId,
                 text:
                   `👋 Ողջույն, *${firstName}*!\n\n` +
                   `Բարի գալուստ **Քիփս (Qips)**՝ [@QipsBot](https://t.me/QipsBot):\n\n` +
                   `📡 Ռադարով տեսեք, թե ովքեր են Ձեր մոտակայքում,\n` +
-                  `• Սեղմեք **«ՔԻՓՍ»**՝ գաղտնի համընկնման համար,\n` +
-                  `• Ուղարկեք անանուն հրավեր Ձեր կոնտակտներին,\n` +
-                  `👻 Միացրեք **Ghost Mode**-ը Telegram Stars-ով (+374 համարների համար՝ 50 ⭐️/ամիս, այլ համարների համար՝ 500 ⭐️/ամիս)։\n\n` +
+                  `• Սեղմեք **«ՔԻՓՍ»**՝ մտերմանալու համար,\n` +
+                  `• Սեղմեք **«Քփվել»**՝ Ձեր կոնտակտներին հրավիրելու համար։\n\n` +
                   `Սեղմեք ներքևի կոճակը հավելվածը բացելու համար 👇`,
                 parse_mode: 'Markdown',
                 reply_markup: {
+                  remove_keyboard: true,
                   inline_keyboard: [
                     [
                       {
                         text: '🚀 Բացել Քիփս (Qips)',
-                        web_app: { url: WEBAPP_URL }
+                        web_app: { url: userWebAppUrl }
                       }
                     ]
                   ]
@@ -160,16 +216,19 @@ async function startBot() {
                 chat_id: chatId,
                 text:
                   `👻 *Ghost Mode (Թաքնված ռեժիմ)*\n\n` +
-                  `• 🇦🇲 *+374* կոդով հայկական հեռախոսահամարների համար՝ *50 ⭐️ / ամիս*\n` +
-                  `• 🌍 Մյուս բոլոր համարների համար՝ *500 ⭐️ / ամիս*\n\n` +
-                  `Կիսվեք Ձեր հեռախոսահամարով ներքևի կոճակով՝ Ձեր սակագնով վճարման հաշիվը ստանալու համար կամ վճարեք անմիջապես հավելվածի ներսում 👇`,
+                  `Ghost Mode-ը թույլ է տալիս դիտել մոտակայքում գտնվող օգտատերերին՝ մնալով 100% անտեսանելի ռադարում։\n\n` +
+                  `Այն կարող եք միացնել հավելվածի կարգավորումներում 👇`,
                 parse_mode: 'Markdown',
                 reply_markup: {
-                  keyboard: [
-                    [{ text: '📱 Հաստատել հեռախոսահամարը (+374 ստուգում)', request_contact: true }]
-                  ],
-                  resize_keyboard: true,
-                  one_time_keyboard: true
+                  remove_keyboard: true,
+                  inline_keyboard: [
+                    [
+                      {
+                        text: '🚀 Բացել Քիփս',
+                        web_app: { url: WEBAPP_URL }
+                      }
+                    ]
+                  ]
                 }
               });
             }

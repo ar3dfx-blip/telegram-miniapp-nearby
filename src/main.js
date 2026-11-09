@@ -236,18 +236,23 @@ class AppController {
       } catch (e) {}
     }
 
-    // 2. Request user's own Telegram contact verification if inside Telegram WebApp
-    const tg = window.Telegram?.WebApp;
-    if (tg && tg.initData && typeof tg.requestContact === 'function' && !this.myProfile.phone) {
-      try {
-        const res = await requestTelegramContactPhone();
-        if (res.ok && res.phone) {
-          this.myProfile.phone = res.phone;
-          localStorage.setItem('qips_verified_phone', res.phone);
-          this.updateGhostBadgeUI();
+    // 2. Silently read user's phone if passed via URL or stored locally (without opening intrusive dialogs)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPhone = urlParams.get('phone');
+      if (urlPhone) {
+        const norm = normalizePhoneNumber(urlPhone);
+        if (norm) {
+          this.myProfile.phone = norm;
+          localStorage.setItem('qips_verified_phone', norm);
         }
-      } catch (e) {}
-    }
+      } else {
+        const saved = localStorage.getItem('qips_verified_phone');
+        if (saved) {
+          this.myProfile.phone = saved;
+        }
+      }
+    } catch (e) {}
 
     // 3. Automatically sync all discovered real Telegram users into the contacts list
     this.syncDiscoveredPeersIntoContacts();
@@ -1054,11 +1059,11 @@ class AppController {
             </div>
             <div class="qips-user-meta">
               <div class="qips-user-name">${contact.name}</div>
-              <div class="qips-user-handle">${handleStr} • Անանուն հրավեր @QipsBot-ից</div>
+              <div class="qips-user-handle">${handleStr || 'Telegram'}</div>
             </div>
           </div>
           <button class="btn-anon-invite ${contact.invited ? 'is-invited' : ''}" data-cid="${contact.id}">
-            ${contact.invited ? '✅ Հրավերն ուղարկված է' : `${TG_LOGO_SVG} Հրավիրել անանուն`}
+            ${contact.invited ? (this.currentLang === 'en' ? '✅ Invited' : '✅ Ուղարկված է') : `${TG_LOGO_SVG} ${this.currentLang === 'en' ? 'Qpvel' : 'Քփվել'}`}
           </button>
         </div>
       `;
@@ -1072,7 +1077,7 @@ class AppController {
         if (!contact) return;
 
         soundManager.playTap();
-        btn.textContent = '⏳ Ուղարկվում է @QipsBot-ով...';
+        btn.textContent = this.currentLang === 'en' ? '⏳ Sending...' : '⏳ Ուղարկվում է...';
         btn.disabled = true;
 
         await sendAnonymousInviteViaBot(contact);
@@ -1108,10 +1113,11 @@ class AppController {
     if (tierIntl) tierIntl.classList.toggle('active-tier', !isArm);
 
     if (infoEl) {
+      const phoneTxt = this.myProfile.phone ? ` (${this.myProfile.phone})` : '';
       if (isArm) {
-        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Ձեր Telegram հաշիվը ճանաչված է որպես հայկական (+374)՝ կիրառվում է 50 ⭐️ / ամիս սակագինը</span>`;
+        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Հայկական հաշիվ${phoneTxt} • 50 ⭐️ / ամիս</span>`;
       } else {
-        infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Միջազգային Telegram հաշիվ (ոչ +374)՝ կիրառվում է 500 ⭐️ / ամիս սակագինը</span>`;
+        infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Միջազգային հաշիվ${phoneTxt} • 500 ⭐️ / ամիս</span>`;
       }
     }
 
