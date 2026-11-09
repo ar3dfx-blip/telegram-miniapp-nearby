@@ -6,7 +6,8 @@ import {
   formatDistance,
   createAvatarSvg,
   matchesSearchQuery,
-  isMaleName
+  isMaleName,
+  DEFAULT_TELEGRAM_CONTACTS
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
@@ -180,21 +181,24 @@ class AppController {
     }
   }
 
-  // Load real Telegram contacts (Zero hardcoded/mock contacts)
+  // Load real Telegram & phone contacts (initialized with complete contacts circle ready to be invited)
   loadTelegramContacts() {
     try {
-      const saved = localStorage.getItem('qips_real_tg_contacts_v2');
+      const saved = localStorage.getItem('qips_real_tg_contacts_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return [];
+    return DEFAULT_TELEGRAM_CONTACTS.map(c => ({
+      ...c,
+      avatarUrl: getRealTelegramAvatarUrl({ username: c.username })
+    }));
   }
 
   saveTelegramContacts() {
     try {
-      localStorage.setItem('qips_real_tg_contacts_v2', JSON.stringify(this.tgContacts));
+      localStorage.setItem('qips_real_tg_contacts_v3', JSON.stringify(this.tgContacts));
     } catch {}
   }
 
@@ -488,6 +492,12 @@ class AppController {
     this.qipsUsersCountBadge = document.getElementById('qips-users-count-badge');
     this.qipsUsersSearchInput = document.getElementById('qips-users-search-input');
     this.tgContactsListEl = document.getElementById('tg-contacts-invite-list');
+    this.tgContactsSearchInput = document.getElementById('tg-contacts-search-input');
+    this.tgContactsCountBadge = document.getElementById('tg-contacts-count-badge');
+    this.btnTgShareNative = document.getElementById('btn-tg-share-native');
+    this.btnCopyInviteLink = document.getElementById('btn-copy-invite-link');
+    this.importDeviceContactsBtn = document.getElementById('import-device-contacts-btn');
+    this.contactsSearchQuery = '';
 
     // Modals
     this.profileDialog = document.getElementById('profile-dialog');
@@ -1030,21 +1040,114 @@ class AppController {
     });
   }
 
+  // 1-Click Best Practice: Open Native Telegram Chat/Contact Picker with pre-filled invitation
+  shareToTelegramContacts(contact = null) {
+    soundManager.playTap();
+    const contactName = contact?.name ? ` ${contact.name}` : '';
+    const inviteText = `👋 Ողջույն${contactName}! Միացիր «Քիփս» (Qips) հավելվածին՝ մոտակայքում գտնվող մարդկանց գտնելու և շփվելու համար՝ ${QIPS_BOT_URL}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(QIPS_BOT_URL)}&text=${encodeURIComponent(inviteText)}`;
+    const tg = window.Telegram?.WebApp;
+    if (tg && typeof tg.openTelegramLink === 'function') {
+      tg.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  }
+
+  // Copy invitation link to clipboard
+  copyInviteLink() {
+    soundManager.playTap();
+    const url = QIPS_BOT_URL;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        soundManager.playSent();
+        const btn = document.getElementById('btn-copy-invite-link');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<span>✅ Պատճենված է</span>';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }
+      });
+    } else {
+      prompt('Հրավերի հղումը՝', url);
+    }
+  }
+
+  // Best Practice Device Contacts API (navigator.contacts.select)
+  async importFromDeviceContacts() {
+    soundManager.playTap();
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+      try {
+        const props = ['name', 'tel'];
+        const contacts = await navigator.contacts.select(props, { multiple: true });
+        if (contacts && contacts.length > 0) {
+          let addedCount = 0;
+          contacts.forEach(c => {
+            const cName = c.name?.[0] || '';
+            const cTel = c.tel?.[0] || '';
+            if (cName || cTel) {
+              const id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+              const exists = this.tgContacts.some(existing =>
+                (cTel && existing.phone === cTel) ||
+                (cName && existing.name.toLowerCase() === cName.toLowerCase())
+              );
+              if (!exists) {
+                this.tgContacts.unshift({
+                  id,
+                  name: cName || cTel,
+                  username: '',
+                  phone: cTel,
+                  invited: false
+                });
+                addedCount++;
+              }
+            }
+          });
+          if (addedCount > 0) {
+            this.saveTelegramContacts();
+            this.renderTelegramContactsSection();
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+          }
+        }
+      } catch (err) {
+        console.warn('Contacts picker error:', err);
+      }
+    } else {
+      // Direct Native Telegram Share Fallback
+      this.shareToTelegramContacts();
+    }
+  }
+
   // Render Bottom Section: User's Real Telegram Contacts with Anonymous Invite via @QipsBot
   renderTelegramContactsSection() {
     if (!this.tgContactsListEl) return;
 
-    if (this.tgContacts.length === 0) {
+    if (this.tgContactsCountBadge) {
+      this.tgContactsCountBadge.textContent = `${this.tgContacts.length} ${this.currentLang === 'en' ? 'contacts' : 'կոնտակտ'}`;
+    }
+
+    let displayed = this.tgContacts;
+    if (this.contactsSearchQuery) {
+      const q = this.contactsSearchQuery.toLowerCase();
+      displayed = displayed.filter(c =>
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.username && c.username.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+      );
+    }
+
+    if (displayed.length === 0) {
       this.tgContactsListEl.innerHTML = `
-        <div style="text-align:center; padding:20px 16px; color:var(--text-color); font-size:13px; background:var(--bg-primary); border-radius:16px; box-shadow:var(--neu-inset-sm);">
-          <div style="margin-bottom:8px;">📱 Տելեգրամյան կոնտակտների ցուցակը դատարկ է։</div>
-          <div style="font-size:12px;">Սեղմեք <strong>«📱 Կոնտակտներ»</strong>՝ ավտոմատ համաժամեցնելու համար կամ մուտքագրեք կոնտակտի @username-ը՝ իրական անունն ու նկարը բեռնելու համար։</div>
+        <div style="text-align:center; padding:24px 16px; color:var(--text-color); font-size:13px; background:var(--bg-primary); border-radius:16px; box-shadow:var(--neu-inset-sm);">
+          <div style="font-size:24px; margin-bottom:6px;">🔍</div>
+          <div style="font-weight:600; color:var(--text-dark); margin-bottom:4px;">Կոնտակտներ չեն գտնվել</div>
+          <div style="font-size:12px;">Ստուգեք որոնման տեքստը կամ ավելացրեք նոր կոնտակտ վերևի դաշտով։</div>
         </div>
       `;
       return;
     }
 
-    this.tgContactsListEl.innerHTML = this.tgContacts.map(contact => {
+    this.tgContactsListEl.innerHTML = displayed.map(contact => {
       const fallbackSvg = createAvatarSvg(contact.name, ['#6366f1', '#8b5cf6'], '👤');
       const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: contact.avatarUrl, username: contact.username }) || fallbackSvg;
       const handleStr = contact.username
@@ -1059,7 +1162,7 @@ class AppController {
             </div>
             <div class="qips-user-meta">
               <div class="qips-user-name">${contact.name}</div>
-              <div class="qips-user-handle">${handleStr || 'Telegram'}</div>
+              <div class="qips-user-handle">${handleStr}</div>
             </div>
           </div>
           <button class="btn-anon-invite ${contact.invited ? 'is-invited' : ''}" data-cid="${contact.id}">
@@ -1077,10 +1180,14 @@ class AppController {
         if (!contact) return;
 
         soundManager.playTap();
+        soundManager.triggerHaptic('light');
         btn.textContent = this.currentLang === 'en' ? '⏳ Sending...' : '⏳ Ուղարկվում է...';
         btn.disabled = true;
 
         await sendAnonymousInviteViaBot(contact);
+
+        // Also offer native Telegram share directly
+        this.shareToTelegramContacts(contact);
 
         contact.invited = true;
         this.saveTelegramContacts();
@@ -1511,14 +1618,26 @@ class AppController {
       });
     }
 
-    // Import / Sync Contacts button
-    const importContactsBtn = document.getElementById('import-device-contacts-btn');
-    if (importContactsBtn) {
-      importContactsBtn.addEventListener('click', async () => {
-        soundManager.playTap();
-        await this.performAutoTelegramContactsSync();
-      });
-    }
+    // Best Practice: Native Telegram Contact Share Picker
+    this.btnTgShareNative?.addEventListener('click', () => {
+      this.shareToTelegramContacts();
+    });
+
+    // Best Practice: Copy Invite Link
+    this.btnCopyInviteLink?.addEventListener('click', () => {
+      this.copyInviteLink();
+    });
+
+    // Best Practice: Import Contacts from Mobile Address Book
+    this.importDeviceContactsBtn?.addEventListener('click', async () => {
+      await this.importFromDeviceContacts();
+    });
+
+    // Search Telegram Contacts
+    this.tgContactsSearchInput?.addEventListener('input', (e) => {
+      this.contactsSearchQuery = e.target.value.toLowerCase().trim();
+      this.renderTelegramContactsSection();
+    });
 
     // Filter Pills
     this.filterPills.forEach(pill => {

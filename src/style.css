@@ -2144,7 +2144,7 @@ input:checked + .slider-round:before {
   align-items: center;
   gap: 6px;
   background: var(--bg-secondary);
-  color: var(--accent-primary);
+  color: #24A1DE;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: var(--neu-flat-sm);
   transition: all 0.2s ease;
@@ -2153,14 +2153,109 @@ input:checked + .slider-round:before {
 .btn-anon-invite:hover {
   color: var(--accent-coral);
   box-shadow: var(--neu-flat);
+  transform: translateY(-1px);
 }
 
 .btn-anon-invite:active {
   box-shadow: var(--neu-inset-sm);
+  transform: translateY(1px);
 }
 
 .btn-anon-invite.is-invited {
   color: #059669;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: var(--neu-inset-sm);
+}
+
+/* Telegram Contacts Hero Share Banner (Best Practice) */
+.tg-contacts-hero-banner {
+  background: linear-gradient(135deg, rgba(36, 161, 222, 0.12), rgba(148, 94, 255, 0.10));
+  border: 1px solid rgba(36, 161, 222, 0.25);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--neu-inset-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tg-hero-content {
+  text-align: left;
+}
+
+.tg-hero-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+.tg-hero-subtitle {
+  font-size: 11px;
+  color: var(--text-medium);
+  line-height: 1.4;
+}
+
+.tg-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-tg-share-all {
+  flex: 1;
+  min-width: 170px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #24A1DE;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(36, 161, 222, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-tg-share-all:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(36, 161, 222, 0.5);
+}
+
+.btn-tg-share-all:active {
+  transform: translateY(1px);
+  box-shadow: inset 1px 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.btn-import-phone-contacts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--neu-flat-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-import-phone-contacts:hover {
+  transform: translateY(-1px);
+}
+
+.btn-import-phone-contacts:active {
   box-shadow: var(--neu-inset-sm);
 }
 

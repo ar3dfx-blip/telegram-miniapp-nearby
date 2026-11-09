@@ -208,29 +208,63 @@
                   <h2 class="qips-section-title" id="t-tg-contacts-title">Կոնտակտներ</h2>
                 </div>
               </div>
+              <span class="stat-badge online-stat" id="tg-contacts-count-badge">0 կոնտակտ</span>
             </div>
 
-            <!-- Add or Import Telegram Contact Row -->
-            <div class="tg-contact-add-bar">
+            <!-- Best Practice: Telegram Native Share & Device Contacts Import Banner -->
+            <div class="tg-contacts-hero-banner">
+              <div class="tg-hero-content">
+                <div class="tg-hero-title">Հրավիրեք Ձեր բոլոր կոնտակտներին</div>
+                <div class="tg-hero-subtitle">Ընտրեք Ձեր Telegram-ի կամ հեռախոսի կոնտակտներից և հրավիրեք 1 հպումով</div>
+              </div>
+              <div class="tg-hero-actions">
+                <button class="btn-tg-share-all" id="btn-tg-share-native" title="Բացել Telegram-ի կոնտակտների ընտրիչը">
+                  <svg class="tg-official-logo" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                  </svg>
+                  <span>Հրավիրել Telegram-ից</span>
+                </button>
+                <button class="btn-import-phone-contacts" id="import-device-contacts-btn" title="Ներմուծել հեռախոսի հասցեագրքից">
+                  <span>📱 Հեռախոսից</span>
+                </button>
+                <button class="btn-import-phone-contacts" id="btn-copy-invite-link" title="Պատճենել հրավերի հղումը">
+                  <span>📋 Հղում</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Search Contacts -->
+            <div class="search-box-wrapper" style="margin-bottom: 12px;">
+              <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                id="tg-contacts-search-input"
+                class="search-input"
+                placeholder="Փնտրել կոնտակտներում..."
+              />
+            </div>
+
+            <!-- Quick Add Contact Row -->
+            <div class="tg-contact-add-bar" style="margin-bottom: 12px;">
               <input
                 type="text"
                 id="add-tg-contact-name"
                 class="settings-input"
-                placeholder="Կոնտակտի անունը"
-                style="flex:1; min-width: 110px;"
+                placeholder="Անուն"
+                style="flex:1; min-width: 100px;"
               />
               <input
                 type="text"
                 id="add-tg-contact-user"
                 class="settings-input"
                 placeholder="@username կամ +374..."
-                style="flex:1.2; min-width: 130px;"
+                style="flex:1.2; min-width: 120px;"
               />
               <button class="btn-profile-secondary" id="add-tg-contact-btn" title="Ավելացնել ցուցակում">
                 ➕ Ավելացնել
-              </button>
-              <button class="btn-profile-secondary" id="import-device-contacts-btn" title="Ներմուծել հեռախոսի/Telegram կոնտակտները">
-                📱 Կոնտակտներ
               </button>
             </div>
 
