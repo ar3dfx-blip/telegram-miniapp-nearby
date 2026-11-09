@@ -37,28 +37,40 @@ export class MapEngine {
     this.map = null;
     this.userMarker = null;
     this.peerMarkers = new Map();
-    this.currentCenter = null;
+    this.userCoords = null;
     this.currentRadius = 50;
     this.isLoaded = false;
     this.pendingPeople = null;
     this.lang = 'hy';
+    this.userHasMovedMap = false;
+    this.onZoomChange = null;
+  }
+
+  calculateZoomForRadius(radiusMeters) {
+    const clamped = Math.max(0.5, Math.min(1000, Number(radiusMeters) || 50));
+    // Logarithmic scale mapping 0.5m -> zoom 24.0, 1000m -> zoom 14.0
+    const t = Math.log10(1000 / clamped) / Math.log10(2000);
+    const zoom = 14.0 + 10.0 * t;
+    return Math.max(13.5, Math.min(24.0, zoom));
   }
 
   init(centerCoords, initialRadius = 50) {
-    this.currentCenter = centerCoords || { lat: 40.1776, lng: 44.5126 };
+    this.userCoords = centerCoords || { lat: 40.1776, lng: 44.5126 };
     this.currentRadius = initialRadius;
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
-    const lat = this.currentCenter?.lat || 40.1776;
-    const lng = this.currentCenter?.lng || 44.5126;
+    const lat = this.userCoords?.lat || 40.1776;
+    const lng = this.userCoords?.lng || 44.5126;
+    const initialZoom = this.calculateZoomForRadius(this.currentRadius);
 
     this.map = new maplibregl.Map({
       container: this.containerId,
       style: './map-style-neumorphic.json',
       center: [lng, lat],
-      zoom: 17.2,
-      maxZoom: 19.5,
+      zoom: initialZoom,
+      minZoom: 12,
+      maxZoom: 24.5,
       pitchWithRotate: false,
       dragRotate: false,
       touchPitch: false,
@@ -77,6 +89,36 @@ export class MapEngine {
       return origPanTo(coords, options);
     };
 
+    // User gesture detection: once user drags or scrolls, allow independent pan
+    this.map.on('dragstart', (e) => {
+      if (e.originalEvent) {
+        this.userHasMovedMap = true;
+      }
+    });
+
+    this.map.on('touchmove', () => {
+      this.userHasMovedMap = true;
+    });
+
+    this.map.on('wheel', () => {
+      this.userHasMovedMap = true;
+    });
+
+    // Pinch-to-zoom synchronization with radius slider
+    this.map.on('zoom', (e) => {
+      if (e.originalEvent && typeof this.onZoomChange === 'function') {
+        const curZoom = this.map.getZoom();
+        const t = (curZoom - 14.0) / 10.0;
+        const clampedT = Math.max(0, Math.min(1, t));
+        const r = 1000 / Math.pow(2000, clampedT);
+        this.currentRadius = Math.max(0.5, Math.min(1000, r));
+        if (this.isLoaded && this.map.getSource('search-radius') && this.userCoords) {
+          this.map.getSource('search-radius').setData(createGeoJsonCircle(this.userCoords, this.currentRadius));
+        }
+        this.onZoomChange(this.currentRadius);
+      }
+    });
+
     this.map.on('load', () => {
       this.isLoaded = true;
 
@@ -85,7 +127,7 @@ export class MapEngine {
         if (!this.map.getSource('search-radius')) {
           this.map.addSource('search-radius', {
             type: 'geojson',
-            data: createGeoJsonCircle(this.currentCenter, this.currentRadius)
+            data: createGeoJsonCircle(this.userCoords, this.currentRadius)
           });
 
           this.map.addLayer({
@@ -113,8 +155,8 @@ export class MapEngine {
         console.warn('Radius layer init note:', err);
       }
 
-      if (this.currentCenter) {
-        this.setUserLocation(this.currentCenter, this.currentRadius);
+      if (this.userCoords) {
+        this.setUserLocation(this.userCoords, this.currentRadius);
       }
 
       if (this.pendingPeople) {
@@ -126,15 +168,20 @@ export class MapEngine {
 
   setUserLocation(coords, radiusMeters, userAvatarUrl) {
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
-    this.currentCenter = coords;
-    this.currentRadius = radiusMeters || this.currentRadius;
+    this.userCoords = coords;
+    if (radiusMeters) this.currentRadius = radiusMeters;
     if (userAvatarUrl) this.userAvatarUrl = userAvatarUrl;
 
     if (!this.map) return;
 
-    // Update radius circle GeoJSON data
+    // Update radius circle GeoJSON data centered at user's actual location
     if (this.isLoaded && this.map.getSource('search-radius')) {
-      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.currentCenter, this.currentRadius));
+      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.userCoords, this.currentRadius));
+    }
+
+    // If user has not panned the map yet, keep map centered on user
+    if (!this.userHasMovedMap) {
+      this.map.jumpTo({ center: [coords.lng, coords.lat] });
     }
 
     const avatarSrc = this.userAvatarUrl || './logo.png';
@@ -223,18 +270,28 @@ export class MapEngine {
     });
   }
 
-  updateRadius(radiusMeters) {
-    this.currentRadius = radiusMeters;
-    if (this.map && this.isLoaded && this.map.getSource('search-radius') && this.currentCenter) {
-      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.currentCenter, this.currentRadius));
+  updateRadius(radiusMeters, animate = true) {
+    this.currentRadius = Math.max(0.5, Math.min(1000, Number(radiusMeters) || 50));
+    if (this.map && this.isLoaded && this.map.getSource('search-radius') && this.userCoords) {
+      this.map.getSource('search-radius').setData(createGeoJsonCircle(this.userCoords, this.currentRadius));
+    }
+    const targetZoom = this.calculateZoomForRadius(this.currentRadius);
+    if (this.map) {
+      if (animate) {
+        this.map.easeTo({ zoom: targetZoom, duration: 150 });
+      } else {
+        this.map.setZoom(targetZoom);
+      }
     }
   }
 
   recenter() {
-    if (this.map && this.currentCenter) {
+    this.userHasMovedMap = false;
+    if (this.map && this.userCoords) {
+      const targetZoom = this.calculateZoomForRadius(this.currentRadius);
       this.map.flyTo({
-        center: [this.currentCenter.lng, this.currentCenter.lat],
-        zoom: 17.2,
+        center: [this.userCoords.lng, this.userCoords.lat],
+        zoom: targetZoom,
         essential: true,
         duration: 700
       });
