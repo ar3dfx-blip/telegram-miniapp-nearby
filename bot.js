@@ -7,7 +7,7 @@ dotenv.config();
 const _b1 = '9102883915';
 const _b2 = 'AAFF4nyDxRF0IxZdDxyqG6nUb9t6X4DBJeE';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || `${_b1}:${_b2}`;
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/';
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/?v=57d39fb';
 const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 // Store known users by username -> chatId for anonymous invitations
