@@ -32,6 +32,25 @@ function hashString(str) {
   return hash;
 }
 
+const SEED_QIPS_USERS = [
+  {
+    id: 'tg_yerazamoyn_xr',
+    name: 'YERAZAMOYN XR',
+    username: 'Yerazamoyn_xr',
+    bio: 'Առցանց Քիփսում ✨',
+    online: true,
+    avatarUrl: 'https://t.me/i/userpic/320/Yerazamoyn_xr.jpg'
+  },
+  {
+    id: 'tg_tigran_bagavan',
+    name: 'Tigran',
+    username: 'TigranBagavan',
+    bio: 'Առցանց Քիփսում ✨',
+    online: true,
+    avatarUrl: 'https://t.me/i/userpic/320/TigranBagavan.jpg'
+  }
+];
+
 export class RealtimePeerService {
   constructor(myProfile, onPeersUpdate, onLocationChange) {
     this.myProfile = myProfile || {};
@@ -42,6 +61,7 @@ export class RealtimePeerService {
 
     this.livePeers = new Map(); // peerId -> peer
     this.allQipsUsers = new Map(); // peerId -> peer (all known Qips app users)
+    SEED_QIPS_USERS.forEach(u => this.allQipsUsers.set(u.id, u));
     this.currentCoords = null;
     this.heartbeatTimer = null;
     this.pruneTimer = null;
@@ -117,6 +137,23 @@ export class RealtimePeerService {
       telegramId: this.myProfile.telegramId,
       username: this.myProfile.username
     });
+  }
+
+  isSelfPeer(peer) {
+    if (!peer) return false;
+    if (peer.id === this.myPeerId) return true;
+    if (this.myProfile?.telegramId && peer.telegramId && String(this.myProfile.telegramId) === String(peer.telegramId)) return true;
+    if (this.myProfile?.username && peer.username) {
+      const myU = this.myProfile.username.replace(/^@/, '').trim().toLowerCase();
+      const pU = peer.username.replace(/^@/, '').trim().toLowerCase();
+      if (myU && pU && myU === pU) return true;
+    }
+    if (this.myProfile?.name && peer.name) {
+      const myN = this.myProfile.name.trim().toLowerCase();
+      const pN = peer.name.trim().toLowerCase();
+      if (myN && pN && myN === pN && myN !== 'telegram user') return true;
+    }
+    return false;
   }
 
   // 1. WiFi Network Auto-Detection (Zero GPS required)
@@ -327,7 +364,7 @@ export class RealtimePeerService {
   }
 
   handleRegisteredQipsUser(peer) {
-    if (!peer || !peer.id || peer.id === this.myPeerId) return;
+    if (!peer || !peer.id || this.isSelfPeer(peer)) return;
     if (!this.allQipsUsers.has(peer.id)) {
       this.allQipsUsers.set(peer.id, peer);
       this.notifyPeersUpdate();
@@ -375,7 +412,7 @@ export class RealtimePeerService {
 
   handleIncomingPeer(peer) {
     if (!peer || !peer.id) return;
-    if (peer.id === this.myPeerId) return; // Ignore self
+    if (this.isSelfPeer(peer)) return; // Ignore self
 
     const isSameWifi = Boolean(this.myWifiId && peer.wifiId && this.myWifiId === peer.wifiId);
     peer.isSameWifi = isSameWifi;
@@ -628,7 +665,7 @@ export class RealtimePeerService {
   }
 
   getAllKnownQipsUsers() {
-    return Array.from(this.allQipsUsers.values());
+    return Array.from(this.allQipsUsers.values()).filter(p => !this.isSelfPeer(p));
   }
 
   refreshWifi() {

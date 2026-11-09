@@ -181,19 +181,43 @@ class AppController {
     }
   }
 
-  // Load real Telegram & phone contacts (initialized with complete contacts circle ready to be invited)
+  // Load real Telegram & phone contacts (all contacts guaranteed to be displayed)
   loadTelegramContacts() {
+    let saved = [];
     try {
-      const saved = localStorage.getItem('qips_real_tg_contacts_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const raw = localStorage.getItem('qips_real_tg_contacts_v3');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) saved = parsed;
       }
     } catch {}
-    return DEFAULT_TELEGRAM_CONTACTS.map(c => ({
-      ...c,
-      avatarUrl: getRealTelegramAvatarUrl({ username: c.username })
-    }));
+
+    const savedMap = new Map();
+    saved.forEach(c => {
+      const key = (c.username || c.phone || c.id || c.name || '').toLowerCase();
+      if (key) savedMap.set(key, c);
+    });
+
+    const merged = DEFAULT_TELEGRAM_CONTACTS.map(c => {
+      const key = (c.username || c.phone || c.id || c.name || '').toLowerCase();
+      const existing = savedMap.get(key);
+      return {
+        ...c,
+        invited: existing ? Boolean(existing.invited) : Boolean(c.invited),
+        avatarUrl: c.avatarUrl || getRealTelegramAvatarUrl({ username: c.username })
+      };
+    });
+
+    // Also include any other user-added or device contacts from saved
+    saved.forEach(c => {
+      const key = (c.username || c.phone || c.id || c.name || '').toLowerCase();
+      const alreadyIn = merged.some(m => (m.username || m.phone || m.id || m.name || '').toLowerCase() === key);
+      if (!alreadyIn) {
+        merged.push(c);
+      }
+    });
+
+    return merged;
   }
 
   saveTelegramContacts() {
@@ -822,14 +846,49 @@ class AppController {
   // =========================================================================
   // NEW PAGE: 100% Real Qips Users List («Դարձիր Քիփս») + Real Telegram Contacts
   // =========================================================================
+  isSelfUser(user) {
+    if (!user) return false;
+
+    // 1. Match by peerId
+    if (this.realtimeService?.myPeerId && user.id === this.realtimeService.myPeerId) return true;
+
+    // 2. Match by Telegram ID
+    const myTgId = this.myProfile.telegramId || window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    if (myTgId && user.telegramId && String(myTgId) === String(user.telegramId)) return true;
+
+    // 3. Match by Telegram username
+    const myUname = (this.myProfile.username || window.Telegram?.WebApp?.initDataUnsafe?.user?.username || '').replace(/^@/, '').trim().toLowerCase();
+    const userUname = (user.username || '').replace(/^@/, '').trim().toLowerCase();
+    if (myUname && userUname && myUname === userUname) return true;
+
+    // 4. Match by Phone Number
+    const myPhone = normalizePhoneNumber(this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '');
+    const userPhone = normalizePhoneNumber(user.phone || '');
+    if (myPhone && userPhone && myPhone === userPhone) return true;
+
+    // 5. Match by exact Name if name is set and not default placeholder
+    const myName = (this.myProfile.name || '').trim().toLowerCase();
+    const userName = (user.name || '').trim().toLowerCase();
+    if (myName && userName && myName === userName && myName !== 'telegram user') {
+      return true;
+    }
+
+    return false;
+  }
+
   getAllCurrentQipsUsers() {
     const map = new Map();
 
-    // 1. Add all live & discovered real Qips peers
-    this.people.forEach(p => map.set(p.id, p));
+    // 1. Add all live & discovered real Qips peers (excluding self)
+    this.people.forEach(p => {
+      if (!this.isSelfUser(p)) {
+        map.set(p.id, p);
+      }
+    });
+
     if (this.realtimeService) {
       this.realtimeService.getAllKnownQipsUsers().forEach(p => {
-        if (!map.has(p.id)) {
+        if (!this.isSelfUser(p) && !map.has(p.id)) {
           const fallbackSvg = createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
           const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl, username: p.username });
           map.set(p.id, {
@@ -847,7 +906,7 @@ class AppController {
       });
     }
 
-    return Array.from(map.values());
+    return Array.from(map.values()).filter(u => !this.isSelfUser(u));
   }
 
   renderQipsDirectoryAndContacts() {
@@ -858,7 +917,7 @@ class AppController {
   renderQipsCurrentUsersSection() {
     if (!this.qipsUsersListEl) return;
 
-    const allUsers = this.getAllCurrentQipsUsers();
+    const allUsers = this.getAllCurrentQipsUsers().filter(u => !this.isSelfUser(u));
     const q = (this.qipsUsersSearchQuery || '').trim().toLowerCase();
     const filtered = q
       ? allUsers.filter(u => matchesSearchQuery(u, q))
@@ -1118,30 +1177,17 @@ class AppController {
     }
   }
 
-  // Render Bottom Section: User's Real Telegram Contacts with Anonymous Invite via @QipsBot
+  // Render Bottom Section: All User's Real Telegram Contacts with Anonymous Invite via @QipsBot
   renderTelegramContactsSection() {
     if (!this.tgContactsListEl) return;
 
-    if (this.tgContactsCountBadge) {
-      this.tgContactsCountBadge.textContent = `${this.tgContacts.length} ${this.currentLang === 'en' ? 'contacts' : 'կոնտակտ'}`;
-    }
-
-    let displayed = this.tgContacts;
-    if (this.contactsSearchQuery) {
-      const q = this.contactsSearchQuery.toLowerCase();
-      displayed = displayed.filter(c =>
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.username && c.username.toLowerCase().includes(q)) ||
-        (c.phone && c.phone.includes(q))
-      );
-    }
+    const displayed = this.tgContacts;
 
     if (displayed.length === 0) {
       this.tgContactsListEl.innerHTML = `
         <div style="text-align:center; padding:24px 16px; color:var(--text-color); font-size:13px; background:var(--bg-primary); border-radius:16px; box-shadow:var(--neu-inset-sm);">
-          <div style="font-size:24px; margin-bottom:6px;">🔍</div>
-          <div style="font-weight:600; color:var(--text-dark); margin-bottom:4px;">Կոնտակտներ չեն գտնվել</div>
-          <div style="font-size:12px;">Ստուգեք որոնման տեքստը կամ ավելացրեք նոր կոնտակտ վերևի դաշտով։</div>
+          <div style="font-size:24px; margin-bottom:6px;">👤</div>
+          <div style="font-weight:600; color:var(--text-dark); margin-bottom:4px;">Կոնտակտներ չկան</div>
         </div>
       `;
       return;
@@ -1181,7 +1227,7 @@ class AppController {
 
         soundManager.playTap();
         soundManager.triggerHaptic('light');
-        btn.textContent = this.currentLang === 'en' ? '⏳ Sending...' : '⏳ Ուղարկվում է...';
+        btn.textContent = this.currentLang === 'en' ? 'Sending...' : 'Ուղարկվում է...';
         btn.disabled = true;
 
         await sendAnonymousInviteViaBot(contact);
