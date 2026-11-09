@@ -437,7 +437,7 @@ html, body {
   width: 100%;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  padding: 16px 20px 18px;
+  padding: 14px 18px 16px;
   box-shadow: var(--neu-flat-card);
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
@@ -446,7 +446,7 @@ html, body {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .radar-range-bound {
@@ -469,7 +469,7 @@ html, body {
   letter-spacing: -0.2px;
 }
 
-.radar-controls-top-row .stat-badge.online-stat {
+.radar-controls-top-row .radar-wifi-pill-compact {
   justify-self: center;
 }
 
@@ -503,7 +503,7 @@ html, body {
   appearance: none;
   cursor: pointer;
   box-shadow: var(--neu-inset-sm);
-  margin: 6px 0 16px;
+  margin: 6px 0 2px;
 }
 
 .radius-range-slider::-webkit-slider-thumb {

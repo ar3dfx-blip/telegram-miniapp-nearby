@@ -73,9 +73,15 @@
           <div class="radar-controls-card">
             <div class="radar-controls-top-row">
               <span class="radar-range-bound left-bound" id="radar-min-display">0,5 մետր</span>
-              <div class="stat-badge online-stat">
-                <span class="badge-dot" style="width:7px; height:7px; border-radius:50%; background:#00e676; display:inline-block;"></span>
-                <span id="radar-count-online">0 առցանց</span>
+              <div class="radar-wifi-pill-compact">
+                <span class="tg-live-dot"></span>
+                <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել GPS-ը">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                  </svg>
+                  <span id="t-gps-refresh-label">GPS Live</span>
+                </button>
               </div>
               <span class="range-value right-bound" id="radar-range-display">50 մետր</span>
             </div>
@@ -88,19 +94,8 @@
               step="1"
               value="606"
             />
-            <div class="radar-bottom-action-row">
-              <div class="radar-wifi-pill-compact">
-                <span class="tg-live-dot"></span>
-                <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել GPS-ը">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-                  </svg>
-                  <span id="t-gps-refresh-label">GPS Live</span>
-                </button>
-              </div>
-            </div>
             <!-- Hidden elements for JS compatibility -->
+            <span id="radar-count-online" style="display:none;"></span>
             <span id="t-radius-label" style="display:none;"></span>
             <span id="radar-count-total" style="display:none;"></span>
             <span id="current-location-text" style="display:none;"></span>
