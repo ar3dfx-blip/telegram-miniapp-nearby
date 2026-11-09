@@ -6,7 +6,7 @@ const _p2 = 'AAFF4nyDxRF0IxZdDxyqG6nUb9t6X4DBJeE';
 export const QIPS_BOT_TOKEN = `${_p1}:${_p2}`;
 export const QIPS_BOT_USERNAME = 'QipsBot';
 export const QIPS_BOT_URL = 'https://t.me/QipsBot';
-export const QIPS_WEBAPP_URL = 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/';
+export const QIPS_WEBAPP_URL = 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/?v=1c5f0fb';
 export const QIPS_MUTUAL_GREETING = 'Մենք երկուսս էլ ավելի Քիփ դառնալու ցանկությոն ունենք եթե դեմ չես սկսենք շփվել';
 
 const API_BASE = `https://api.telegram.org/bot${QIPS_BOT_TOKEN}`;
@@ -30,8 +30,66 @@ export function isArmenianPhone(rawPhone = '') {
   return norm.startsWith('+374') && norm.length >= 11;
 }
 
-export function getGhostStarsPrice(rawPhone = '') {
-  return isArmenianPhone(rawPhone) ? 50 : 500;
+// Automatically determine if the user's Telegram account is registered with an Armenian +374 number
+// based on Telegram WebApp account data (initDataUnsafe.user, verified contact phone, language_code, name script, and AM timezone/region)
+export function isArmenianTelegramAccount(myProfile = {}, currentCoords = null) {
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+  // 1. Check explicit phone number from Telegram account if present
+  const rawPhone =
+    tgUser?.phone_number ||
+    myProfile?.phone ||
+    localStorage.getItem('qips_verified_phone') ||
+    '';
+  const normPhone = normalizePhoneNumber(rawPhone);
+  if (normPhone.length >= 7) {
+    return normPhone.startsWith('+374');
+  }
+
+  // 2. Check Telegram account data (language_code, Armenian script in Telegram name)
+  if (tgUser) {
+    const lang = (tgUser.language_code || '').toLowerCase();
+    if (lang === 'hy' || lang.startsWith('hy-')) {
+      return true;
+    }
+    const fullTgName = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`;
+    if (/[\u0530-\u058F]/.test(fullTgName)) {
+      return true;
+    }
+  }
+
+  // 3. Check timezone (Asia/Yerevan) or Armenian Geo-IP coordinates (+374 region)
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz === 'Asia/Yerevan') {
+      return true;
+    }
+  } catch (e) {}
+
+  if (currentCoords && typeof currentCoords.lat === 'number' && typeof currentCoords.lng === 'number') {
+    if (
+      currentCoords.lat >= 38.8 && currentCoords.lat <= 41.3 &&
+      currentCoords.lng >= 43.4 && currentCoords.lng <= 46.7
+    ) {
+      return true;
+    }
+  }
+
+  if (myProfile?.name && /[\u0530-\u058F]/.test(myProfile.name)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getGhostStarsPrice(myProfileOrPhone = {}, currentCoords = null) {
+  if (typeof myProfileOrPhone === 'string') {
+    if (myProfileOrPhone.trim()) {
+      return isArmenianPhone(myProfileOrPhone) ? 50 : 500;
+    }
+    return isArmenianTelegramAccount({}, currentCoords) ? 50 : 500;
+  }
+  return isArmenianTelegramAccount(myProfileOrPhone, currentCoords) ? 50 : 500;
 }
 
 export async function callBotApi(method, payload = {}) {
@@ -145,13 +203,15 @@ export async function syncQipsBotConfig() {
 }
 
 // Create a REAL Telegram Stars (XTR) monthly subscription invoice link via @QipsBot
-export async function createGhostStarsInvoice({ phone = '', userId = 'user', username = '' }) {
-  const armPhone = isArmenianPhone(phone);
-  const starsAmount = armPhone ? 50 : 500;
+export async function createGhostStarsInvoice({ isArmenian = null, myProfile = {}, currentCoords = null, userId = 'user' }) {
+  const armAccount = typeof isArmenian === 'boolean'
+    ? isArmenian
+    : isArmenianTelegramAccount(myProfile, currentCoords);
+  const starsAmount = armAccount ? 50 : 500;
 
   const title = 'Ghost Mode (Թաքնված ռեժիմ) — Քիփս';
-  const description = armPhone
-    ? 'Ամսական բաժանորդագրություն (+374 հայկական համար՝ 50 ⭐️ / ամիս)՝ ռադարում անտեսանելի լինելու համար'
+  const description = armAccount
+    ? 'Ամսական բաժանորդագրություն (+374 հայկական հաշիվ՝ 50 ⭐️ / ամիս)՝ ռադարում անտեսանելի լինելու համար'
     : 'Ամսական բաժանորդագրություն (Միջազգային սակագին՝ 500 ⭐️ / ամիս)՝ ռադարում անտեսանելի լինելու համար';
 
   const payloadStr = `qips_ghost_${starsAmount}_${userId}_${Date.now()}`;
@@ -194,7 +254,7 @@ export async function createGhostStarsInvoice({ phone = '', userId = 'user', use
       ok: true,
       invoiceUrl: response.result,
       starsAmount,
-      isArmenian: armPhone,
+      isArmenian: armAccount,
       payload: payloadStr
     };
   }
@@ -240,9 +300,9 @@ export async function sendAnonymousInviteViaBot(contact) {
   const chatTarget = contact.telegramId || contact.chatId || (cleanUsername ? `@${cleanUsername}` : null);
 
   const anonymousText =
-    `🕵️‍♂️ *Անանուն հրավեր «Քիփս» (Qips) հավելվածում*\n\n` +
+    `*Անանուն հրավեր «Քիփս» (Qips) հավելվածում*\n\n` +
     `Ձեր տելեգրամյան կոնտակտներից մեկը անանուն հրավիրել է Ձեզ միանալ *Qips* հավելվածին՝ մտերմանալու և մոտակայքում շփվելու համար։\n\n` +
-    `🔒 _Հրավերն ուղարկված է QipsBot-ի կողմից անանուն՝ ուղարկողի տվյալները բացարձակ գաղտնի են։_\n\n` +
+    `_Հրավերն ուղարկված է QipsBot-ի կողմից անանուն՝ ուղարկողի տվյալները բացարձակ գաղտնի են։_\n\n` +
     `Սեղմեք ներքևի կոճակը՝ հավելվածը բացելու համար 👇`;
 
   const replyMarkup = {
@@ -287,13 +347,13 @@ export async function notifyMutualQipsMatch(myProfile, partnerProfile) {
     : QIPS_BOT_URL;
 
   const botMatchMessageForMe =
-    `💞 *Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
+    `*Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
     `Դուք և *${partnerProfile.name || partnerUsername}* (@${partnerUsername || 'user'}) սեղմել եք «Դարձիր Քիփս» կոճակը միմյանց համար։\n\n` +
     `💬 Ողջույնի հաղորդագրություն՝\n` +
     `«_${QIPS_MUTUAL_GREETING}_»`;
 
   const botMatchMessageForPartner =
-    `💞 *Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
+    `*Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
     `Դուք և *${myProfile.name || myUsername}* (@${myUsername || 'user'}) սեղմել եք «Դարձիր Քիփս» կոճակը միմյանց համար։\n\n` +
     `💬 Ողջույնի հաղորդագրություն՝\n` +
     `«_${QIPS_MUTUAL_GREETING}_»`;

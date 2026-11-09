@@ -28,6 +28,12 @@ import {
 } from './qipsBotService.js';
 import confetti from 'canvas-confetti';
 
+// Outline Heart Icon (matching the navigation tab)
+export const OUTLINE_HEART_SVG = `<svg class="qips-heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px; display:inline-block; margin-right:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+
+// Official Telegram plane logo
+export const TG_LOGO_SVG = `<svg class="tg-official-logo" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2.5px; display:inline-block; margin-right:5px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>`;
+
 class AppController {
   constructor() {
     this.currentLang = this.detectTelegramLanguage();
@@ -163,9 +169,9 @@ class AppController {
         badge.style.color = '#065f46';
       }
     } else {
-      const price = this.myProfile.phone ? getGhostStarsPrice(this.myProfile.phone) : null;
+      const price = getGhostStarsPrice(this.myProfile, this.currentCoords);
       if (badge) {
-        badge.textContent = price ? `⭐️ ${price} Stars / ամիս` : '⭐️ 50 / 500 Stars';
+        badge.textContent = `⭐️ ${price} Stars / ամիս`;
       }
     }
 
@@ -337,14 +343,15 @@ class AppController {
           const safeTop = tg.safeAreaInset?.top || 0;
           const contentSafeTop = tg.contentSafeAreaInset?.top || 0;
           const totalTop = safeTop + contentSafeTop;
-          const isMobileTg = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && Boolean(tg.initData || tg.platform === 'android' || tg.platform === 'ios');
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+          const isTg = Boolean(tg.initData || tg.platform === 'android' || tg.platform === 'ios' || tg.platform === 'weba');
 
           if (totalTop > 0) {
-            document.documentElement.style.setProperty('--app-safe-top', `${Math.max(totalTop + 10, isMobileTg ? 88 : 16)}px`);
-          } else if (tg.isFullscreen || isMobileTg) {
-            document.documentElement.style.setProperty('--app-safe-top', '90px');
+            document.documentElement.style.setProperty('--app-safe-top', `${Math.max(totalTop + 12, (isMobile || isTg) ? 88 : 18)}px`);
+          } else if (tg.isFullscreen || isMobile || isTg) {
+            document.documentElement.style.setProperty('--app-safe-top', '88px');
           } else {
-            document.documentElement.style.setProperty('--app-safe-top', '16px');
+            document.documentElement.style.setProperty('--app-safe-top', '18px');
           }
         };
 
@@ -706,10 +713,10 @@ class AppController {
       const isMutual = this.realtimeService?.isMutualQipsWith(person);
       const isPending = this.realtimeService?.hasSentQipsTo(person);
       const qipsBtnLabel = isMutual
-        ? '💞 Քիփս ենք'
+        ? `${OUTLINE_HEART_SVG} Քիփս ենք`
         : isPending
-          ? '🔒 Հայտն ուղարկված է'
-          : '💞 Դարձիր Քիփս';
+          ? 'Հայտն ուղարկված է'
+          : `${OUTLINE_HEART_SVG} Դարձիր Քիփս`;
       const qipsBtnClass = isMutual
         ? 'is-mutual-matched'
         : isPending
@@ -865,19 +872,19 @@ class AppController {
       if (isMutual) {
         btnHtml = `
           <button class="btn-become-qips is-mutual-matched qips-action-btn" data-id="${user.id}">
-            💞 Քիփս ենք (Շփվել)
+            ${OUTLINE_HEART_SVG} Քիփս ենք (Շփվել)
           </button>
         `;
       } else if (isPending) {
         btnHtml = `
           <button class="btn-become-qips is-secret-pending qips-action-btn" data-id="${user.id}" title="Պահպանվում է բացարձակ գաղտնիություն մինչև դիմացինը նույնպես սեղմի">
-            🔒 Սպասում է (Գաղտնի)
+            Սպասում է (Գաղտնի)
           </button>
         `;
       } else {
         btnHtml = `
           <button class="btn-become-qips qips-action-btn" data-id="${user.id}">
-            💞 Դարձիր Քիփս
+            ${OUTLINE_HEART_SVG} Դարձիր Քիփս
           </button>
         `;
       }
@@ -964,12 +971,12 @@ class AppController {
 
     const cleanUsername = (partnerPeer.username || 'user').replace(/^@/, '');
     const tgDirectGreetingUrl = `https://t.me/${cleanUsername}?text=${encodeURIComponent(QIPS_MUTUAL_GREETING)}`;
-    const fallbackSvg = createAvatarSvg(partnerPeer.name, ['#945eff', '#af87ff'], '💞');
+    const fallbackSvg = createAvatarSvg(partnerPeer.name, ['#945eff', '#af87ff'], '👤');
     const avatar = getRealTelegramAvatarUrl({ avatarUrl: partnerPeer.avatarUrl, username: cleanUsername }) || fallbackSvg;
 
     this.qipsMatchDialogBody.innerHTML = `
       <div class="modal-header">
-        <h3 class="modal-title">💞 Համընկնում՝ Դուք Քիփս եք!</h3>
+        <h3 class="modal-title">${OUTLINE_HEART_SVG} Համընկնում՝ Դուք Քիփս եք!</h3>
         <button class="modal-close-btn" id="close-qips-match-btn">✕</button>
       </div>
 
@@ -1047,11 +1054,11 @@ class AppController {
             </div>
             <div class="qips-user-meta">
               <div class="qips-user-name">${contact.name}</div>
-              <div class="qips-user-handle">${handleStr} • 🔒 Անանուն հրավեր @QipsBot-ից</div>
+              <div class="qips-user-handle">${handleStr} • Անանուն հրավեր @QipsBot-ից</div>
             </div>
           </div>
           <button class="btn-anon-invite ${contact.invited ? 'is-invited' : ''}" data-cid="${contact.id}">
-            ${contact.invited ? '✅ Հրավերն ուղարկված է' : '🕵️‍♂️ Հրավիրել անանուն'}
+            ${contact.invited ? '✅ Հրավերն ուղարկված է' : `${TG_LOGO_SVG} Հրավիրել անանուն`}
           </button>
         </div>
       `;
@@ -1080,25 +1087,16 @@ class AppController {
   }
 
   // =========================================================================
-  // Ghost Mode Telegram Stars (XTR) Payment Modal Flow
+  // Ghost Mode Telegram Stars (XTR) Payment Modal Flow (100% Automatic Tier Detection)
   // =========================================================================
   openGhostPaymentModal() {
     if (!this.ghostPaymentDialog) return;
-
-    const phoneInput = document.getElementById('ghost-phone-input');
-    if (phoneInput && this.myProfile.phone) {
-      phoneInput.value = this.myProfile.phone;
-    }
-
     this.updateGhostModalPricePreview();
     this.ghostPaymentDialog.showModal();
   }
 
   updateGhostModalPricePreview() {
-    const phoneInput = document.getElementById('ghost-phone-input');
-    const rawPhone = phoneInput ? phoneInput.value.trim() : (this.myProfile.phone || '');
-    const normPhone = normalizePhoneNumber(rawPhone);
-    const isArm = isArmenianPhone(normPhone);
+    const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
     const stars = isArm ? 50 : 500;
 
     const tierArm = document.getElementById('tier-row-arm');
@@ -1111,11 +1109,9 @@ class AppController {
 
     if (infoEl) {
       if (isArm) {
-        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Հայկական համար (${normPhone})՝ կիրառվում է ամսական 50 ⭐️ սակագինը</span>`;
-      } else if (normPhone.length >= 5) {
-        infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Ոչ +374 համար (${normPhone})՝ կիրառվում է ամսական 500 ⭐️ սակագինը</span>`;
+        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Ձեր Telegram հաշիվը ճանաչված է որպես հայկական (+374)՝ կիրառվում է 50 ⭐️ / ամիս սակագինը</span>`;
       } else {
-        infoEl.textContent = 'Առանց +374 համարի հաստատման գործում է 500 ⭐️ ամսական սակագինը';
+        infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Միջազգային Telegram հաշիվ (ոչ +374)՝ կիրառվում է 500 ⭐️ / ամիս սակագինը</span>`;
       }
     }
 
@@ -1125,18 +1121,11 @@ class AppController {
   }
 
   async handlePayGhostStars() {
-    const phoneInput = document.getElementById('ghost-phone-input');
     const statusEl = document.getElementById('ghost-payment-status-msg');
     const payBtn = document.getElementById('pay-ghost-stars-btn');
 
-    const rawPhone = phoneInput ? phoneInput.value.trim() : (this.myProfile.phone || '');
-    const normPhone = normalizePhoneNumber(rawPhone);
-    if (normPhone) {
-      this.myProfile.phone = normPhone;
-      try { localStorage.setItem('qips_verified_phone', normPhone); } catch {}
-    }
-
-    const starsAmount = getGhostStarsPrice(normPhone);
+    const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
+    const starsAmount = isArm ? 50 : 500;
 
     if (payBtn) {
       payBtn.disabled = true;
@@ -1148,9 +1137,10 @@ class AppController {
     }
 
     const invoiceRes = await createGhostStarsInvoice({
-      phone: normPhone,
-      userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
-      username: this.myProfile.username
+      isArmenian: isArm,
+      myProfile: this.myProfile,
+      currentCoords: this.currentCoords,
+      userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user'
     });
 
     if (payBtn) {
@@ -1176,7 +1166,7 @@ class AppController {
       }
       tg.openInvoice(invoiceUrl, (status) => {
         if (status === 'paid') {
-          this.activateGhostSubscription(starsAmount, normPhone);
+          this.activateGhostSubscription(starsAmount, this.myProfile.phone);
           if (this.ghostPaymentDialog) this.ghostPaymentDialog.close();
         } else if (status === 'cancelled') {
           if (statusEl) {
@@ -1321,7 +1311,7 @@ class AppController {
 
       <div class="profile-modal-actions">
         <button class="btn-become-qips ${isMutual ? 'is-mutual-matched' : (isPending ? 'is-secret-pending' : '')}" id="modal-become-qips-btn" style="width:100%; justify-content:center; padding:12px;">
-          ${isMutual ? '💞 Քիփս ենք (Բացել ողջույնը)' : (isPending ? '🔒 «Դարձիր Քիփս» հայտն ուղարկված է (Գաղտնի)' : '💞 Դարձիր Քիփս (Գաղտնի հայտ)')}
+          ${isMutual ? `${OUTLINE_HEART_SVG} Քիփս ենք (Բացել ողջույնը)` : (isPending ? '«Դարձիր Քիփս» հայտն ուղարկված է (Գաղտնի)' : `${OUTLINE_HEART_SVG} Դարձիր Քիփս (Գաղտնի հայտ)`)}
         </button>
 
         <button class="btn-chat-primary" id="modal-chat-btn">
@@ -1585,35 +1575,12 @@ class AppController {
     }
 
     const closeGhostPayBtn = document.getElementById('close-ghost-pay-btn');
-    const ghostPhoneInput = document.getElementById('ghost-phone-input');
-    const verifyTgContactBtn = document.getElementById('verify-tg-contact-btn');
     const payGhostStarsBtn = document.getElementById('pay-ghost-stars-btn');
 
     if (closeGhostPayBtn) {
       closeGhostPayBtn.addEventListener('click', () => {
         soundManager.playTap();
         this.ghostPaymentDialog?.close();
-      });
-    }
-
-    if (ghostPhoneInput) {
-      ghostPhoneInput.addEventListener('input', () => {
-        this.updateGhostModalPricePreview();
-      });
-    }
-
-    if (verifyTgContactBtn) {
-      verifyTgContactBtn.addEventListener('click', async () => {
-        soundManager.playTap();
-        const res = await requestTelegramContactPhone();
-        if (res.ok && res.phone) {
-          this.myProfile.phone = res.phone;
-          try { localStorage.setItem('qips_verified_phone', res.phone); } catch {}
-          if (ghostPhoneInput) ghostPhoneInput.value = res.phone;
-          this.updateGhostModalPricePreview();
-        } else {
-          ghostPhoneInput?.focus();
-        }
       });
     }
 

@@ -43,6 +43,7 @@
   /* Layout Units (8px base grid) */
   --unit: 8px;
   --radius-sm: 12px;
+  --app-safe-top: 84px;
   --radius-md: 16px;
   --radius-lg: 20px;
   --radius-full: 9999px;
