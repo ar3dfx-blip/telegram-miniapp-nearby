@@ -77,21 +77,19 @@
               id="radar-radius-slider"
               class="radius-range-slider"
               min="0.5"
-              max="100"
+              max="1000"
               step="0.5"
               value="50"
             />
             <div class="radar-bottom-action-row">
               <div class="radar-wifi-pill-compact">
                 <span class="tg-live-dot"></span>
-                <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել WiFi-ը">
+                <button class="location-change-btn" id="refresh-gps-btn" title="Թարմացնել GPS-ը">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                    <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-                    <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-                    <circle cx="12" cy="20" r="1" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
                   </svg>
-                  <span id="t-gps-refresh-label">WiFi Live</span>
+                  <span id="t-gps-refresh-label">GPS Live</span>
                 </button>
               </div>
             </div>
@@ -121,7 +119,6 @@
             <div class="filter-pills-row" id="filter-pills">
               <button class="filter-pill active" data-filter="all" id="pill-all">Բոլորը</button>
               <button class="filter-pill" data-filter="online" id="pill-online">Առցանց</button>
-              <button class="filter-pill" data-filter="close" id="pill-close">Մոտակա (&lt;2մ)</button>
               <button class="filter-pill" data-filter="female" id="pill-female">Էգ</button>
               <button class="filter-pill" data-filter="male" id="pill-male">Արու</button>
             </div>
@@ -132,7 +129,7 @@
             </div>
 
             <!-- TOP SECTION: Current Qips App Users List with "ՔԻՓՍ" button -->
-            <div class="qips-section-card" style="margin-top: 18px;">
+            <div class="qips-section-card" style="margin-top: 18px; margin-bottom: 28px;">
               <div class="qips-section-header">
                 <div class="qips-section-title-row">
                   <span class="qips-section-icon qips-section-icon-heart" title="Քփեր">
@@ -149,33 +146,6 @@
               <!-- Qips Current Users List -->
               <div class="qips-users-list" id="qips-current-users-list">
                 <!-- Populated dynamically by JS -->
-              </div>
-            </div>
-
-            <!-- BOTTOM SECTION: Telegram Contacts List with Anonymous Invite via @QipsBot -->
-            <div class="qips-section-card" style="margin-top: 14px; margin-bottom: 24px;">
-              <div class="qips-section-header">
-                <div class="qips-section-title-row">
-                  <span class="qips-section-icon qips-section-icon-tg" title="Telegram">
-                    <svg width="42" height="42" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block;">
-                      <circle cx="12" cy="12" r="12" fill="#24A1DE"/>
-                      <path d="M16.64 8.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" fill="#ffffff"/>
-                    </svg>
-                  </span>
-                  <div>
-                    <h2 class="qips-section-title" id="t-tg-contacts-title">Կոնտակտներ</h2>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Native Telegram Picker Action Button (Dogs/Notcoin style) -->
-              <div style="margin: 8px 0 4px 0;">
-                <button class="btn-native-tg-picker" id="btn-native-tg-share-picker" title="Qpvel">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                  </svg>
-                  <span>Qpvel</span>
-                </button>
               </div>
             </div>
           </div>

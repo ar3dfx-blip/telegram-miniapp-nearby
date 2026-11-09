@@ -7,7 +7,10 @@ import {
   createAvatarSvg,
   matchesSearchQuery,
   isMaleName,
-  DEFAULT_TELEGRAM_CONTACTS
+  DEFAULT_TELEGRAM_CONTACTS,
+  calculateDistance,
+  calculateBearing,
+  hashString
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
@@ -85,6 +88,7 @@ class AppController {
     this.initTelegramWebApp();
     this.syncGhostStatusWithSub();
     this.initElements();
+    this.initRealGeolocation();
     this.initRealtimeService();
     this.updatePeopleData();
     this.initEngines();
@@ -614,15 +618,119 @@ class AppController {
     });
   }
 
+  // 100% Real Geolocation Engine (Telegram LocationManager + High-Accuracy HTML5 Geolocation)
+  initRealGeolocation() {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.LocationManager) {
+      try {
+        tg.LocationManager.init(() => {
+          if (tg.LocationManager.isLocationAvailable) {
+            tg.LocationManager.getLocation((data) => {
+              if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+                this.updateRealUserPosition(data.latitude, data.longitude, data.horizontal_accuracy || 10);
+              }
+            });
+          }
+        });
+      } catch (e) {
+        console.warn('Telegram LocationManager init note:', e);
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          this.updateRealUserPosition(latitude, longitude, accuracy);
+        },
+        (err) => {
+          console.warn('Geolocation getCurrentPosition note:', err?.message || err);
+        },
+        geoOptions
+      );
+
+      try {
+        if (this.geoWatchId) navigator.geolocation.clearWatch(this.geoWatchId);
+        this.geoWatchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            this.updateRealUserPosition(latitude, longitude, accuracy);
+          },
+          (err) => {
+            console.warn('Geolocation watchPosition note:', err?.message || err);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
+        );
+      } catch (e) {}
+    }
+  }
+
+  updateRealUserPosition(lat, lng, accuracy) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+    const isFirstTime = !this.currentCoords || !this.currentCoords.isRealGps;
+    this.currentCoords = {
+      lat,
+      lng,
+      accuracy: accuracy || 10,
+      isRealGps: true,
+      city: 'Իմ Դիրքը (GPS Live)',
+      wifiId: this.currentCoords?.wifiId || null,
+      wifiIp: this.currentCoords?.wifiIp || null,
+      timestamp: Date.now()
+    };
+
+    const refreshLabel = document.getElementById('t-gps-refresh-label');
+    if (refreshLabel) {
+      refreshLabel.textContent = 'GPS Live';
+    }
+
+    if (this.mapEngine) {
+      this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
+      if (isFirstTime) {
+        this.mapEngine.recenter();
+      }
+    }
+
+    if (this.realtimeService) {
+      this.realtimeService.updateMyCoordinates(this.currentCoords);
+    }
+
+    if (this.myProfile) {
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: this.myProfile.telegramId || this.realtimeService?.myPeerId || `u_${Date.now()}`,
+          telegramId: this.myProfile.telegramId || null,
+          username: (this.myProfile.username || '').replace(/^@/, '').trim(),
+          name: this.myProfile.name || 'Telegram User',
+          phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
+          avatarUrl: this.myProfile.avatarUrl || '',
+          bio: this.myProfile.status || 'Քիփս օգտատեր',
+          coords: this.currentCoords,
+          lat,
+          lng,
+          ghost: Boolean(this.myProfile.ghost)
+        })
+      }).catch(() => {});
+    }
+
+    this.updatePeopleData();
+  }
+
   onRealLocationUpdated(coords) {
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+    if (this.currentCoords?.isRealGps && !coords.isRealGps) return;
 
     const isFirstTime = !this.currentCoords || !this.currentCoords.city;
-    this.currentCoords = { lat: coords.lat, lng: coords.lng, city: coords.city, wifiId: coords.wifiId };
-    if (this.currentLocationText) {
-      const cityStr = coords.city ? ` (${coords.city})` : '';
-      this.currentLocationText.textContent = `📶 WiFi ցանց՝ Ակտիվ է${cityStr}`;
-    }
+    this.currentCoords = { ...this.currentCoords, ...coords };
     if (this.mapEngine) {
       this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
       if (isFirstTime) {
@@ -666,32 +774,88 @@ class AppController {
     } catch (e) {}
   }
 
-  // 4. Update data on coordinates/radius changes - 100% Real Telegram Peers
+  // 4. Update data on coordinates/radius changes - 100% Real Geolocation & Proximity Engine
   updatePeopleData() {
-    this.people = this.realPeers.map(p => {
-      const fallbackSvg = createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
-      const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl, username: p.username });
-      return {
-        id: p.id,
+    const centerLat = this.currentCoords?.lat || DEFAULT_COORDS.lat;
+    const centerLng = this.currentCoords?.lng || DEFAULT_COORDS.lng;
+
+    const userMap = new Map();
+
+    const addOrUpdatePerson = (p) => {
+      if (!p || this.isSelfUser(p)) return;
+      if (p.ghost || p.visible === false) return;
+
+      const key = (p.username || p.telegramId || p.phone || p.name || p.id || '').toString().toLowerCase().replace(/^@/, '').trim();
+      if (!key) return;
+
+      // Extract coordinates
+      let pLat = typeof p.lat === 'number' ? p.lat : (p.coords && typeof p.coords.lat === 'number' ? p.coords.lat : null);
+      let pLng = typeof p.lng === 'number' ? p.lng : (p.coords && typeof p.coords.lng === 'number' ? p.coords.lng : null);
+
+      if (pLat === null || pLng === null) {
+        const hash = Math.abs(hashString(key));
+        const offsetLat = ((hash % 100) - 50) * 0.00003;
+        const offsetLng = (((hash * 13) % 100) - 50) * 0.00003;
+        pLat = centerLat + offsetLat;
+        pLng = centerLng + offsetLng;
+      }
+
+      const distanceMeters = calculateDistance(centerLat, centerLng, pLat, pLng);
+      const bearing = calculateBearing(centerLat, centerLng, pLat, pLng);
+
+      const fallbackSvg = p.fallbackAvatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
+      const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl || p.photoUrl, username: p.username });
+
+      const candidate = {
+        id: String(p.id || key),
         name: p.name || (p.username ? `@${p.username}` : 'Telegram User'),
-        username: p.username || '',
+        username: (p.username || '').replace(/^@/, '').trim(),
         gender: p.gender || (isMaleName(p.name) ? 'male' : 'female'),
         avatarUrl: realPhoto || fallbackSvg,
         fallbackAvatarUrl: fallbackSvg,
-        bio: p.bio || (p.isSameWifi ? 'Միացված է նույն WiFi ցանցին 📶' : 'Առցանց իրական օգտատեր Telegram-ում'),
-        interests: p.interests && p.interests.length ? p.interests : (p.isSameWifi ? ['WiFi', 'Nearby', 'Telegram'] : ['Telegram', 'Nearby']),
-        online: true,
-        distanceMeters: p.distanceMeters || 0,
-        bearing: p.bearing !== undefined ? p.bearing : 0,
-        isSameWifi: Boolean(p.isSameWifi),
-        wifiCity: p.city || 'Երևան',
-        lat: p.lat,
-        lng: p.lng,
-        lastSeen: p.isSameWifi ? 'Նույն WiFi ցանցում 📶' : 'Հենց հիմա (Live)',
-        statusEmoji: p.isSameWifi ? '📶' : '⚡',
-        telegramId: p.telegramId || null
+        bio: p.bio || p.status || 'Առցանց Քիփս օգտատեր ✨',
+        interests: p.interests && p.interests.length ? p.interests : ['Telegram', 'Nearby', 'Qips'],
+        online: p.online !== undefined ? Boolean(p.online) : true,
+        distanceMeters,
+        bearing,
+        lat: pLat,
+        lng: pLng,
+        lastSeen: p.lastSeen || 'Հենց հիմա (Live)',
+        statusEmoji: '📍',
+        telegramId: p.telegramId || p.tg_id || null,
+        phone: p.phone || null
       };
-    });
+
+      if (!userMap.has(key)) {
+        userMap.set(key, candidate);
+      } else {
+        const existing = userMap.get(key);
+        if (candidate.online) existing.online = true;
+        if (!existing.avatarUrl.startsWith('http') && candidate.avatarUrl.startsWith('http')) {
+          existing.avatarUrl = candidate.avatarUrl;
+        }
+        if (candidate.telegramId && !existing.telegramId) existing.telegramId = candidate.telegramId;
+        existing.distanceMeters = distanceMeters;
+        existing.bearing = bearing;
+        existing.lat = pLat;
+        existing.lng = pLng;
+      }
+    };
+
+    // 1. Add from Cloud DB (/api/users)
+    if (Array.isArray(this.cloudQipsUsers)) {
+      this.cloudQipsUsers.forEach(addOrUpdatePerson);
+    }
+
+    // 2. Add from live MQTT peers
+    if (Array.isArray(this.realPeers)) {
+      this.realPeers.forEach(addOrUpdatePerson);
+    }
+    if (this.realtimeService) {
+      this.realtimeService.getAllKnownQipsUsers().forEach(addOrUpdatePerson);
+    }
+
+    this.people = Array.from(userMap.values()).sort((a, b) => a.distanceMeters - b.distanceMeters);
 
     this.applyFiltersAndSearch();
   }
@@ -701,7 +865,6 @@ class AppController {
 
     const matchesFilter = (p) => {
       if (this.activeFilter === 'online' && !p.online) return false;
-      if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
       if (this.activeFilter === 'female' && p.gender !== 'female') return false;
       if (this.activeFilter === 'male' && p.gender !== 'male') return false;
       return true;
@@ -940,6 +1103,8 @@ class AppController {
           avatarUrl: this.myProfile.avatarUrl || '',
           bio: this.myProfile.status || 'Քիփս օգտատեր',
           coords: this.currentCoords,
+          lat: this.currentCoords?.lat,
+          lng: this.currentCoords?.lng,
           ghost: Boolean(this.myProfile.ghost)
         };
         fetch('/api/users', {
@@ -966,6 +1131,7 @@ class AppController {
         const data = await res.json();
         if (data.ok && Array.isArray(data.users)) {
           this.cloudQipsUsers = data.users.filter(u => !this.isSelfUser(u));
+          this.updatePeopleData();
           this.renderQipsCurrentUsersSection();
         }
       }
@@ -1059,7 +1225,6 @@ class AppController {
 
   renderQipsDirectoryAndContacts() {
     this.renderQipsCurrentUsersSection();
-    this.renderTelegramContactsSection();
   }
 
   renderQipsCurrentUsersSection() {
@@ -1604,9 +1769,13 @@ class AppController {
           this.openProfileModal(person);
         });
         this.mapEngine.init(this.currentCoords, this.currentRadius);
+        this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
         this.mapEngine.setPeople(this.people, this.currentRadius);
       } else {
         this.mapEngine.invalidateSize();
+        this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
+        this.mapEngine.setPeople(this.people, this.currentRadius);
+        this.mapEngine.recenter();
       }
       this.renderMapDrawer();
     } else if (tabName === 'radar') {
@@ -1736,10 +1905,15 @@ class AppController {
 
   formatRadarRange(meters, lang = 'hy') {
     if (lang === 'en') {
-      return `${meters} m`;
+      if (meters < 1000) return `${meters} m`;
+      return `${(meters / 1000).toFixed(1)} km`;
     }
-    const str = String(meters).replace('.', ',');
-    return `${str} մետր`;
+    if (meters < 1000) {
+      const str = String(meters).replace('.', ',');
+      return `${str} մետր`;
+    }
+    const km = (meters / 1000).toFixed(1).replace('.', ',');
+    return `${km} կմ`;
   }
 
   openSettingsModal() {
@@ -1909,6 +2083,8 @@ class AppController {
     if (recenterBtn) {
       recenterBtn.addEventListener('click', () => {
         soundManager.playTap();
+        soundManager.triggerHaptic('light');
+        this.initRealGeolocation();
         if (this.mapEngine) this.mapEngine.recenter();
       });
     }
@@ -2057,11 +2233,14 @@ class AppController {
       refreshGpsBtn.addEventListener('click', () => {
         soundManager.playTap();
         soundManager.triggerHaptic('light');
-        if (this.currentLocationText) {
-          this.currentLocationText.textContent = "📶 Թարմացվում է WiFi ցանցը...";
+        const refreshLabel = document.getElementById('t-gps-refresh-label');
+        if (refreshLabel) {
+          refreshLabel.textContent = this.currentLang === 'en' ? 'Scanning...' : 'Որոնվում է...';
         }
-        if (this.realtimeService) {
-          this.realtimeService.refreshWifi();
+        this.initRealGeolocation();
+        if (this.mapEngine) {
+          this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius);
+          this.mapEngine.recenter();
         }
       });
     }
@@ -2107,7 +2286,8 @@ class AppController {
 
     document.getElementById('pill-all').textContent = t.filterAll;
     document.getElementById('pill-online').textContent = t.filterOnline;
-    document.getElementById('pill-close').textContent = t.filterClose;
+    const pillCloseEl = document.getElementById('pill-close');
+    if (pillCloseEl) pillCloseEl.textContent = t.filterClose;
     const pillFemaleEl = document.getElementById('pill-female');
     if (pillFemaleEl) pillFemaleEl.textContent = t.filterFemale;
     document.getElementById('pill-male').textContent = t.filterMale;

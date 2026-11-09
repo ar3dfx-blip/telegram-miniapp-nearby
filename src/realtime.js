@@ -206,21 +206,52 @@ export class RealtimePeerService {
 
     this.myWifiCity = city;
 
-    this.currentCoords = {
-      lat,
-      lng,
-      city,
-      wifiId: this.myWifiId,
-      wifiIp: this.myPublicIp,
-      isWifi: true,
-      timestamp: Date.now()
-    };
+    if (this.currentCoords && this.currentCoords.isRealGps) {
+      this.currentCoords.wifiId = this.myWifiId;
+      this.currentCoords.wifiIp = this.myPublicIp;
+    } else {
+      this.currentCoords = {
+        lat,
+        lng,
+        city,
+        wifiId: this.myWifiId,
+        wifiIp: this.myPublicIp,
+        isWifi: true,
+        timestamp: Date.now()
+      };
+    }
 
     if (this.onLocationChange) {
       this.onLocationChange(this.currentCoords);
     }
 
     // Broadcast immediately upon WiFi detection
+    this.broadcastPresence();
+  }
+
+  // Update user's real GPS coordinates and immediately re-evaluate proximity
+  updateMyCoordinates(coords) {
+    if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+    this.currentCoords = {
+      ...this.currentCoords,
+      ...coords,
+      isRealGps: true,
+      timestamp: Date.now()
+    };
+
+    // Recalculate distance and bearing for all known live peers from the new GPS center
+    this.livePeers.forEach(peer => {
+      const pLat = typeof peer.lat === 'number' ? peer.lat : (peer.coords && typeof peer.coords.lat === 'number' ? peer.coords.lat : null);
+      const pLng = typeof peer.lng === 'number' ? peer.lng : (peer.coords && typeof peer.coords.lng === 'number' ? peer.coords.lng : null);
+      if (pLat !== null && pLng !== null) {
+        peer.lat = pLat;
+        peer.lng = pLng;
+        peer.distanceMeters = calculateHaversineMeters(this.currentCoords.lat, this.currentCoords.lng, pLat, pLng);
+        peer.bearing = calculateBearing(this.currentCoords.lat, this.currentCoords.lng, pLat, pLng);
+      }
+    });
+
+    this.notifyPeersUpdate();
     this.broadcastPresence();
   }
 
@@ -412,29 +443,30 @@ export class RealtimePeerService {
     const isSameWifi = Boolean(this.myWifiId && peer.wifiId && this.myWifiId === peer.wifiId);
     peer.isSameWifi = isSameWifi;
 
-    if (isSameWifi) {
-      const hash = Math.abs(hashString(peer.id));
-      const microDist = Math.round(((hash % 112) / 10 + 0.8) * 10) / 10;
-      peer.distanceMeters = microDist;
-      peer.bearing = (hash * 7) % 360;
+    const peerLat = typeof peer.lat === 'number' ? peer.lat : (peer.coords && typeof peer.coords.lat === 'number' ? peer.coords.lat : null);
+    const peerLng = typeof peer.lng === 'number' ? peer.lng : (peer.coords && typeof peer.coords.lng === 'number' ? peer.coords.lng : null);
 
-      const offsetLat = ((hash % 100) - 50) * 0.000008;
-      const offsetLng = (((hash * 13) % 100) - 50) * 0.000008;
-      peer.lat = this.currentCoords.lat + offsetLat;
-      peer.lng = this.currentCoords.lng + offsetLng;
-    } else if (this.currentCoords && peer.lat && peer.lng) {
+    if (this.currentCoords && peerLat !== null && peerLng !== null) {
+      peer.lat = peerLat;
+      peer.lng = peerLng;
       peer.distanceMeters = calculateHaversineMeters(
         this.currentCoords.lat,
         this.currentCoords.lng,
-        peer.lat,
-        peer.lng
+        peerLat,
+        peerLng
       );
       peer.bearing = calculateBearing(
         this.currentCoords.lat,
         this.currentCoords.lng,
-        peer.lat,
-        peer.lng
+        peerLat,
+        peerLng
       );
+    } else if (isSameWifi && this.currentCoords) {
+      const hash = Math.abs(hashString(peer.id));
+      peer.lat = this.currentCoords.lat + ((hash % 100) - 50) * 0.00002;
+      peer.lng = this.currentCoords.lng + (((hash * 13) % 100) - 50) * 0.00002;
+      peer.distanceMeters = calculateHaversineMeters(this.currentCoords.lat, this.currentCoords.lng, peer.lat, peer.lng);
+      peer.bearing = calculateBearing(this.currentCoords.lat, this.currentCoords.lng, peer.lat, peer.lng);
     } else {
       peer.distanceMeters = 9999;
       peer.bearing = 0;

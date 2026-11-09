@@ -13,6 +13,9 @@ let memoryCache = {
       avatarUrl: 'https://t.me/i/userpic/320/Yerazamoyn_xr.jpg',
       bio: 'Առցանց Քիփսում ✨',
       online: true,
+      coords: { lat: 40.1790, lng: 44.5130, city: 'Երևան, Կենտրոն' },
+      lat: 40.1790,
+      lng: 44.5130,
       lastSeenAt: Date.now()
     }
   },
@@ -95,9 +98,14 @@ export async function saveUser(userData) {
   if (!key) return null;
 
   const existing = memoryCache.users[key] || {};
+  const lat = typeof userData.lat === 'number' ? userData.lat : (userData.coords?.lat ?? existing.lat);
+  const lng = typeof userData.lng === 'number' ? userData.lng : (userData.coords?.lng ?? existing.lng);
   const updated = {
     ...existing,
     ...userData,
+    lat,
+    lng,
+    coords: userData.coords || (lat && lng ? { lat, lng } : existing.coords),
     canonicalKey: key,
     lastSeenAt: Date.now(),
     online: true

@@ -124,10 +124,11 @@ export class MapEngine {
     });
   }
 
-  setUserLocation(coords, radiusMeters) {
+  setUserLocation(coords, radiusMeters, userAvatarUrl) {
     if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
     this.currentCenter = coords;
     this.currentRadius = radiusMeters || this.currentRadius;
+    if (userAvatarUrl) this.userAvatarUrl = userAvatarUrl;
 
     if (!this.map) return;
 
@@ -136,9 +137,15 @@ export class MapEngine {
       this.map.getSource('search-radius').setData(createGeoJsonCircle(this.currentCenter, this.currentRadius));
     }
 
+    const avatarSrc = this.userAvatarUrl || './logo.png';
+
     // Update user marker position without DOM tearing
     if (this.userMarker) {
       this.userMarker.setLngLat([coords.lng, coords.lat]);
+      const img = this.userMarker.getElement()?.querySelector('.tg-beacon-logo');
+      if (img && this.userAvatarUrl && img.src !== this.userAvatarUrl) {
+        img.src = this.userAvatarUrl;
+      }
     } else {
       const beaconEl = document.createElement('div');
       beaconEl.className = 'tg-live-beacon';
@@ -146,7 +153,7 @@ export class MapEngine {
         <div class="tg-beacon-ring"></div>
         <div class="tg-beacon-ring tg-ring-delayed"></div>
         <div class="tg-beacon-core">
-          <img src="./logo.png" class="tg-beacon-logo" alt="My Location" />
+          <img src="${avatarSrc}" onerror="this.onerror=null;this.src='./logo.png';" class="tg-beacon-logo" alt="My Location" />
         </div>
       `;
 

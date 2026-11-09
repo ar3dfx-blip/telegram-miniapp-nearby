@@ -39,6 +39,17 @@ export function createAvatarSvg(name, bgGrad = ['#945eff', '#af87ff'], emoji = "
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+// Simple deterministic hash to calculate consistent offsets
+export function hashString(str) {
+  let hash = 0;
+  if (!str) return hash;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
 // Calculate distance in meters using Haversine formula
 export function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
