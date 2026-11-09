@@ -125,7 +125,7 @@ app.get('*', (req, res) => {
       res.send(`
         <html>
           <body style="font-family: sans-serif; background:#0b141d; color:#fff; padding:30px; text-align:center;">
-            <h2>Telegram Mini App Server is Running! 🚀</h2>
+            <h2>Telegram Mini App Server is Running!</h2>
             <p>Run <code>npm run dev</code> for local frontend development or <code>npm run build</code> to produce production assets.</p>
           </body>
         </html>

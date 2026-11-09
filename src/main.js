@@ -165,7 +165,7 @@ class AppController {
     if (this.hasActiveGhostSubscription()) {
       const daysLeft = Math.max(1, Math.ceil((this.ghostSub.expiresAt - Date.now()) / (1000 * 60 * 60 * 24)));
       if (badge) {
-        badge.textContent = `✅ Ակտիվ (${daysLeft} օր)`;
+        badge.textContent = `Ակտիվ (${daysLeft} օր)`;
         badge.style.background = 'linear-gradient(135deg, #d1fae5, #a7f3d0)';
         badge.style.color = '#065f46';
       }
@@ -1064,7 +1064,7 @@ class AppController {
         const btn = document.getElementById('btn-copy-invite-link');
         if (btn) {
           const orig = btn.innerHTML;
-          btn.innerHTML = '<span>✅ Պատճենված է</span>';
+          btn.innerHTML = '<span>Պատճենված է</span>';
           setTimeout(() => { btn.innerHTML = orig; }, 2000);
         }
       });
@@ -1166,7 +1166,7 @@ class AppController {
             </div>
           </div>
           <button class="btn-anon-invite ${contact.invited ? 'is-invited' : ''}" data-cid="${contact.id}">
-            ${contact.invited ? (this.currentLang === 'en' ? '✅ Invited' : '✅ Ուղարկված է') : `${TG_LOGO_SVG} ${this.currentLang === 'en' ? 'Qpvel' : 'Քփվել'}`}
+            ${contact.invited ? (this.currentLang === 'en' ? 'Qpcrats' : 'Քփցրած') : `${TG_LOGO_SVG} ${this.currentLang === 'en' ? 'Qpvel' : 'Քփվել'}`}
           </button>
         </div>
       `;
@@ -1222,7 +1222,7 @@ class AppController {
     if (infoEl) {
       const phoneTxt = this.myProfile.phone ? ` (${this.myProfile.phone})` : '';
       if (isArm) {
-        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Հայկական հաշիվ${phoneTxt} • 50 ⭐️ / ամիս</span>`;
+        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">Հայկական հաշիվ${phoneTxt} • 50 ⭐️ / ամիս</span>`;
       } else {
         infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Միջազգային հաշիվ${phoneTxt} • 500 ⭐️ / ամիս</span>`;
       }
@@ -1300,7 +1300,7 @@ class AppController {
     if (statusEl) {
       statusEl.style.color = '#059669';
       statusEl.innerHTML = `
-        ✅ Իրական <strong>${starsAmount} ⭐️</strong> Telegram Stars հաշիվը բացվեց նոր պատուհանում (<a href="${invoiceUrl}" target="_blank" style="color:var(--accent-primary); font-weight:700;">Բացել Telegram-ում</a>)։
+        Իրական <strong>${starsAmount} ⭐️</strong> Telegram Stars հաշիվը բացվեց նոր պատուհանում (<a href="${invoiceUrl}" target="_blank" style="color:var(--accent-primary); font-weight:700;">Բացել Telegram-ում</a>)։
       `;
     }
   }
@@ -1489,7 +1489,7 @@ class AppController {
       soundManager.playSent();
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
       const btn = this.profileDialogBody.querySelector('#modal-say-hi-btn');
-      btn.textContent = `✅ ${t.contactSent}`;
+      btn.textContent = t.contactSent;
       btn.style.borderColor = '#00e676';
       btn.style.color = '#00e676';
     });

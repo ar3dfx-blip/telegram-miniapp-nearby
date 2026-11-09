@@ -168,7 +168,7 @@ export class ChatEngine {
         <div class="chat-quick-replies">
           <button class="quick-chip" data-msg="👋 Ողջույն, մոտակայքում ես?">👋 Ողջույն, մոտակայքում ես?</button>
           <button class="quick-chip" data-msg="☕ Սուրճի՞ կգնանք միասին">☕ Սուրճի՞ կգնանք</button>
-          <button class="quick-chip" data-msg="🚀 Հաճելի է ծանոթանալ!">🚀 Հաճելի է ծանոթանալ</button>
+          <button class="quick-chip" data-msg="Հաճելի է ծանոթանալ!">Հաճելի է ծանոթանալ</button>
           <button class="quick-chip" data-msg="📍 Որտե՞ղ ես հենց հիմա">📍 Որտե՞ղ ես հիմա</button>
         </div>
 

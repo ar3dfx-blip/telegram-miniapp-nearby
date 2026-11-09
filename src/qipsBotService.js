@@ -309,7 +309,7 @@ export async function sendAnonymousInviteViaBot(contact) {
     inline_keyboard: [
       [
         {
-          text: '🚀 Միանալ Քիփս (Qips)-ին',
+          text: 'Միանալ Քիփս (Qips)-ին',
           url: QIPS_BOT_URL
         }
       ]

@@ -39,7 +39,7 @@ export const translations = {
     quickGreetings: [
       "👋 Ողջույն, մոտակայքում ես?",
       "☕ Սուրճի՞ կգնանք Cascade-ում",
-      "🚀 Հաճելի է ծանոթանալ!",
+      "Հաճելի է ծանոթանալ!",
       "📍 Որտե՞ղ ես հենց հիմա?"
     ],
     locationDetected: "📍 Ձեր դիրքը որոշված է",
@@ -68,7 +68,8 @@ export const translations = {
     qipsBtnAction: "ՔԻՓՍ",
     tgContactsTitle: "Կոնտակտներ",
     qipsUsersBadge: "օգտատեր",
-    btnQpvel: "Քփվել"
+    btnQpvel: "Քփվել",
+    btnQpcrats: "Քփցրած"
   },
   en: {
     appTitle: "Qips",
@@ -109,7 +110,7 @@ export const translations = {
     quickGreetings: [
       "👋 Hey there! Are you nearby?",
       "☕ Want to grab a quick coffee?",
-      "🚀 Nice to connect with you!",
+      "Nice to connect with you!",
       "📍 Where are you hanging out right now?"
     ],
     locationDetected: "📍 GPS Location detected",
@@ -138,6 +139,7 @@ export const translations = {
     qipsBtnAction: "QIPS",
     tgContactsTitle: "Contacts",
     qipsUsersBadge: "users",
-    btnQpvel: "Qpvel"
+    btnQpvel: "Qpvel",
+    btnQpcrats: "Qpcrats"
   }
 };

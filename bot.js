@@ -56,7 +56,7 @@ async function startBot() {
     console.error(`❌ Սխալ Bot Token:`, me.description);
     return;
   }
-  console.log(`✅ Միացված է բոտին՝ @${me.result.username} (https://t.me/${me.result.username})`);
+  console.log(`Միացված է բոտին՝ @${me.result.username} (https://t.me/${me.result.username})`);
   console.log(`🔗 WebApp URL՝ ${WEBAPP_URL}`);
 
   // Set default menu button for @QipsBot
@@ -71,7 +71,7 @@ async function startBot() {
   // Set bot commands
   await telegramRequest('setMyCommands', {
     commands: [
-      { command: 'start', description: '🚀 Բացել Քիփս (Qips) հավելվածը' },
+      { command: 'start', description: 'Բացել Քիփս (Qips) հավելվածը' },
       { command: 'ghost', description: '👻 Ghost Mode (Թաքնված ռեժիմ)' },
       { command: 'invite', description: 'Ուղարկել հրավեր կոնտակտին' }
     ]
@@ -115,7 +115,7 @@ async function startBot() {
           // 2. Handle Successful Telegram Stars Payment
           if (msg.successful_payment) {
             const sp = msg.successful_payment;
-            console.log(`✅ Վճարումը հաջողվեց՝ ${sp.total_amount} ${sp.currency} (User: ${chatId})`);
+            console.log(`Վճարումը հաջողվեց՝ ${sp.total_amount} ${sp.currency} (User: ${chatId})`);
             await telegramRequest('sendMessage', {
               chat_id: chatId,
               text:
@@ -124,7 +124,7 @@ async function startBot() {
               parse_mode: 'Markdown',
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🚀 Բացել Քիփս (Ghost Mode)', web_app: { url: WEBAPP_URL } }]
+                  [{ text: 'Բացել Քիփս (Ghost Mode)', web_app: { url: WEBAPP_URL } }]
                 ]
               }
             });
@@ -171,7 +171,7 @@ async function startBot() {
                 inline_keyboard: [
                   [
                     {
-                      text: '🚀 Բացել Քիփս (Qips)',
+                      text: 'Բացել Քիփս (Qips)',
                       web_app: { url: userWebAppUrl }
                     }
                   ]
@@ -204,7 +204,7 @@ async function startBot() {
                   inline_keyboard: [
                     [
                       {
-                        text: '🚀 Բացել Քիփս (Qips)',
+                        text: 'Բացել Քիփս (Qips)',
                         web_app: { url: userWebAppUrl }
                       }
                     ]
@@ -224,7 +224,7 @@ async function startBot() {
                   inline_keyboard: [
                     [
                       {
-                        text: '🚀 Բացել Քիփս',
+                        text: 'Բացել Քիփս',
                         web_app: { url: WEBAPP_URL }
                       }
                     ]
