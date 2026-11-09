@@ -1798,8 +1798,7 @@ class AppController {
     const photoSrc = getRealTelegramAvatarUrl({ avatarUrl: person.avatarUrl, username: person.username }) || fallbackSvg;
 
     this.profileDialogBody.innerHTML = `
-      <div class="modal-header">
-        <h3 class="modal-title">${t.viewProfile}</h3>
+      <div class="modal-header" style="display:flex; justify-content:flex-end; padding-bottom:0;">
         <button class="modal-close-btn" id="modal-close-profile">✕</button>
       </div>
 
@@ -1813,15 +1812,8 @@ class AppController {
       </div>
 
       <div class="profile-section-card">
-        <div class="section-label">${t.interests || 'ՀԵՏԱՔՐՔՐՈՒԹՅՈՒՆՆԵՐ'}</div>
+        <div class="section-label">${t.bio || 'ԿԱՐԳԱՎԻՃԱԿ'}</div>
         <div style="font-size:14px; color:var(--text-dark); line-height:1.5;">${person.bio || t.defaultUserTitle || 'Քիփս օգտատեր'}</div>
-      </div>
-
-      <div class="profile-section-card">
-        <div class="section-label">${t.interests || 'ՀԵՏԱՔՐՔՐՈՒԹՅՈՒՆՆԵՐ'}</div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
-          ${interests.map(i => `<span class="tag-badge">#${i}</span>`).join('')}
-        </div>
       </div>
 
       <div class="profile-modal-actions">
@@ -1831,13 +1823,6 @@ class AppController {
             : (isPending
               ? (t.qipsRequestSent || 'Հայտն ուղարկված է')
               : `${OUTLINE_HEART_SVG} ${t.qipsBtnAction || 'ՔԻՓՍ'}`)}
-        </button>
-
-        <button class="btn-chat-primary" id="modal-chat-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          ${t.writeMessageInApp || t.writeMessage || 'Նամակ գրել (Հավելվածում)'}
         </button>
 
         ${person.username ? `
@@ -1860,12 +1845,6 @@ class AppController {
     this.profileDialogBody.querySelector('#modal-become-qips-btn').addEventListener('click', () => {
       this.profileDialog.close();
       this.onClickBecomeQips(person);
-    });
-
-    this.profileDialogBody.querySelector('#modal-chat-btn').addEventListener('click', () => {
-      soundManager.playTap();
-      this.profileDialog.close();
-      this.openChatWith(person);
     });
 
     const tgLinkBtn = this.profileDialogBody.querySelector('#modal-tg-direct-link');

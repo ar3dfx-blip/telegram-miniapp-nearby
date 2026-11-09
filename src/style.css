@@ -364,7 +364,6 @@ html, body {
    1. Radar View Section (3D Circular Dial Knob)
    ========================================================================== */
 .radar-view-container {
-  --map-square-size: min(90vw, 380px, calc(100dvh - 280px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -382,14 +381,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Use CSS variable so map and all other containers share the exact same width */
-  width: var(--map-square-size) !important;
-  height: var(--map-square-size) !important;
-  min-width: 220px;
-  min-height: 220px;
+  /* Match the exact width of the other containers, with square aspect ratio */
+  width: 100% !important;
+  max-width: 100% !important;
   aspect-ratio: 1 / 1 !important;
+  height: auto !important;
   flex: 0 0 auto !important; /* Prevents vertical squashing into an oval */
-  margin: 0 auto;
+  margin: 0 !important;
   background: var(--bg-primary);
   border-radius: 26px !important;
   padding: 0 !important;
@@ -436,10 +434,7 @@ html, body {
 
 /* Radar Controls Card (Slider & Stats) */
 .radar-controls-card {
-  width: var(--map-square-size) !important;
-  max-width: 100% !important;
-  margin: 0 auto;
-  box-sizing: border-box;
+  width: 100%;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   padding: 16px 20px 18px;
@@ -1191,10 +1186,7 @@ html, body {
    3. List View Section & Cards (Soft 3D Diffused Cards)
    ========================================================================== */
 .radar-list-section {
-  width: var(--map-square-size) !important;
-  max-width: 100% !important;
-  margin: 0 auto;
-  box-sizing: border-box;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
