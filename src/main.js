@@ -713,10 +713,10 @@ class AppController {
       const isMutual = this.realtimeService?.isMutualQipsWith(person);
       const isPending = this.realtimeService?.hasSentQipsTo(person);
       const qipsBtnLabel = isMutual
-        ? `${OUTLINE_HEART_SVG} Քիփս ենք`
+        ? `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS Connected' : 'ՔԻՓՍ ենք'}`
         : isPending
-          ? 'Հայտն ուղարկված է'
-          : `${OUTLINE_HEART_SVG} Դարձիր Քիփս`;
+          ? (this.currentLang === 'en' ? 'Request Sent' : 'Հայտն ուղարկված է')
+          : `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ'}`;
       const qipsBtnClass = isMutual
         ? 'is-mutual-matched'
         : isPending
@@ -872,19 +872,19 @@ class AppController {
       if (isMutual) {
         btnHtml = `
           <button class="btn-become-qips is-mutual-matched qips-action-btn" data-id="${user.id}">
-            ${OUTLINE_HEART_SVG} Քիփս ենք (Շփվել)
+            ${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS Connected' : 'ՔԻՓՍ ենք (Շփվել)'}
           </button>
         `;
       } else if (isPending) {
         btnHtml = `
-          <button class="btn-become-qips is-secret-pending qips-action-btn" data-id="${user.id}" title="Պահպանվում է բացարձակ գաղտնիություն մինչև դիմացինը նույնպես սեղմի">
-            Սպասում է (Գաղտնի)
+          <button class="btn-become-qips is-secret-pending qips-action-btn" data-id="${user.id}" title="${this.currentLang === 'en' ? 'Pending mutual confirmation' : 'Սպասում է դիմացինի հաստատմանը'}">
+            ${this.currentLang === 'en' ? 'Pending' : 'Սպասում է'}
           </button>
         `;
       } else {
         btnHtml = `
           <button class="btn-become-qips qips-action-btn" data-id="${user.id}">
-            ${OUTLINE_HEART_SVG} Դարձիր Քիփս
+            ${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ'}
           </button>
         `;
       }
@@ -1311,7 +1311,11 @@ class AppController {
 
       <div class="profile-modal-actions">
         <button class="btn-become-qips ${isMutual ? 'is-mutual-matched' : (isPending ? 'is-secret-pending' : '')}" id="modal-become-qips-btn" style="width:100%; justify-content:center; padding:12px;">
-          ${isMutual ? `${OUTLINE_HEART_SVG} Քիփս ենք (Բացել ողջույնը)` : (isPending ? '«Դարձիր Քիփս» հայտն ուղարկված է (Գաղտնի)' : `${OUTLINE_HEART_SVG} Դարձիր Քիփս (Գաղտնի հայտ)`)}
+          ${isMutual
+            ? `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS Connected (Chat)' : 'ՔԻՓՍ ենք (Շփվել)'}`
+            : (isPending
+              ? (this.currentLang === 'en' ? 'Pending' : 'Հայտն ուղարկված է')
+              : `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ'}`)}
         </button>
 
         <button class="btn-chat-primary" id="modal-chat-btn">
@@ -1724,6 +1728,11 @@ class AppController {
     if (shareBtnEl && t.tgShareLive) shareBtnEl.textContent = t.tgShareLive;
     const refreshLabel = document.getElementById('t-gps-refresh-label');
     if (refreshLabel && t.gpsRefreshLabel) refreshLabel.textContent = t.gpsRefreshLabel;
+
+    const qipsUsersTitleEl = document.getElementById('t-qips-users-title');
+    if (qipsUsersTitleEl && t.qipsUsersTitle) qipsUsersTitleEl.textContent = t.qipsUsersTitle;
+    const tgContactsTitleEl = document.getElementById('t-tg-contacts-title');
+    if (tgContactsTitleEl && t.tgContactsTitle) tgContactsTitleEl.textContent = t.tgContactsTitle;
 
     this.applyFiltersAndSearch();
     this.renderQipsDirectoryAndContacts();

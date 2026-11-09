@@ -348,13 +348,13 @@ export async function notifyMutualQipsMatch(myProfile, partnerProfile) {
 
   const botMatchMessageForMe =
     `*Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
-    `Դուք և *${partnerProfile.name || partnerUsername}* (@${partnerUsername || 'user'}) սեղմել եք «Դարձիր Քիփս» կոճակը միմյանց համար։\n\n` +
+    `Դուք և *${partnerProfile.name || partnerUsername}* (@${partnerUsername || 'user'}) սեղմել եք «ՔԻՓՍ» կոճակը միմյանց համար։\n\n` +
     `💬 Ողջույնի հաղորդագրություն՝\n` +
     `«_${QIPS_MUTUAL_GREETING}_»`;
 
   const botMatchMessageForPartner =
     `*Շնորհավորում ենք՝ Քիփս Համընկնում (Mutual Qips)!*\n\n` +
-    `Դուք և *${myProfile.name || myUsername}* (@${myUsername || 'user'}) սեղմել եք «Դարձիր Քիփս» կոճակը միմյանց համար։\n\n` +
+    `Դուք և *${myProfile.name || myUsername}* (@${myUsername || 'user'}) սեղմել եք «ՔԻՓՍ» կոճակը միմյանց համար։\n\n` +
     `💬 Ողջույնի հաղորդագրություն՝\n` +
     `«_${QIPS_MUTUAL_GREETING}_»`;
 

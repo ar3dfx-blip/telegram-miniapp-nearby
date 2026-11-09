@@ -63,7 +63,11 @@ export const translations = {
     wifiNetworkActive: "📶 WiFi Տեղային Ցանց՝ Ակտիվ է",
     wifiScanning: "📶 Որոշվում է WiFi ցանցը...",
     wifiSameNetwork: "Նույն WiFi-ում",
-    wifiTag: "WiFi"
+    wifiTag: "WiFi",
+    qipsUsersTitle: "Քփեր",
+    qipsBtnAction: "ՔԻՓՍ",
+    tgContactsTitle: "Կոնտակտներ",
+    qipsUsersBadge: "օգտատեր"
   },
   en: {
     appTitle: "Qips",
@@ -128,6 +132,10 @@ export const translations = {
     wifiNetworkActive: "📶 WiFi Local Network: Active",
     wifiScanning: "📶 Scanning WiFi network...",
     wifiSameNetwork: "Same WiFi",
-    wifiTag: "WiFi"
+    wifiTag: "WiFi",
+    qipsUsersTitle: "Qper",
+    qipsBtnAction: "QIPS",
+    tgContactsTitle: "Contacts",
+    qipsUsersBadge: "users"
   }
 };
