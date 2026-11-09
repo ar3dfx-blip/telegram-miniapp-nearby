@@ -73,6 +73,9 @@ class AppController {
     this.tgContacts = this.loadTelegramContacts();
     this.autoSyncContactsEnabled = localStorage.getItem('qips_first_contacts_confirmed_v1') === 'confirmed';
 
+    // Cloud Qips Users from Vercel Serverless DB
+    this.cloudQipsUsers = [];
+
     // Engines & Realtime Service
     this.radarEngine = null;
     this.mapEngine = null;
@@ -88,6 +91,10 @@ class AppController {
     this.setupEventListeners();
     this.applyTranslations();
     this.renderQipsDirectoryAndContacts();
+
+    // Sync with Vercel Cloud Backend (Users, Ghost Status, Matches)
+    this.syncWithVercelCloudBackend();
+    setInterval(() => this.syncWithVercelCloudBackend(), 20000);
 
     // Prompt user on first launch to confirm automatic Telegram contacts sync
     this.checkFirstTimeContactsSync();
@@ -545,6 +552,7 @@ class AppController {
     this.tgContactsListEl = document.getElementById('tg-contacts-invite-list');
     this.tgContactsSearchInput = document.getElementById('tg-contacts-search-input');
     this.tgContactsCountBadge = document.getElementById('tg-contacts-count-badge');
+    this.btnNativeTgSharePicker = document.getElementById('btn-native-tg-share-picker');
     this.btnTgShareNative = document.getElementById('btn-tg-share-native');
     this.btnCopyInviteLink = document.getElementById('btn-copy-invite-link');
     this.importDeviceContactsBtn = document.getElementById('import-device-contacts-btn');
@@ -687,7 +695,7 @@ class AppController {
     const matchesFilter = (p) => {
       if (this.activeFilter === 'online' && !p.online) return false;
       if (this.activeFilter === 'close' && p.distanceMeters > 2) return false;
-      if (this.activeFilter === 'tech' && !p.interests?.some(i => /tech|տեխ|it|dev|code|ծրագր/i.test(i)) && !/tech|տեխ|it|dev/i.test(p.bio || '')) return false;
+      if (this.activeFilter === 'female' && p.gender !== 'female') return false;
       if (this.activeFilter === 'male' && p.gender !== 'male') return false;
       return true;
     };
@@ -900,19 +908,92 @@ class AppController {
       return true;
     }
 
-    // 6. Direct heuristic: if user phone matches Tigran (+374 55 161182), exclude Tigran / TigranBagavan
+    // 6. Direct heuristic: if user phone matches Tigran (+374 55 161182) or username is tigranbagavan
     if (myPhone && myPhone.includes('55161182')) {
-      if (userUname === 'tigranbagavan' || userName === 'tigran') return true;
+      if (userUname === 'tigranbagavan' || userName.includes('tigran')) return true;
+    }
+    if (myUname === 'tigranbagavan') {
+      if (userUname === 'tigranbagavan' || userName.includes('tigran')) return true;
     }
 
     return false;
+  }
+
+  // Cloud backend synchronization with Vercel serverless API
+  async syncWithVercelCloudBackend() {
+    try {
+      // 1. Register current user in Vercel Cloud DB
+      if (this.myProfile) {
+        const payload = {
+          id: this.myProfile.telegramId || this.realtimeService?.myPeerId || `u_${Date.now()}`,
+          telegramId: this.myProfile.telegramId || null,
+          username: (this.myProfile.username || '').replace(/^@/, '').trim(),
+          name: this.myProfile.name || 'Telegram User',
+          phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
+          avatarUrl: this.myProfile.avatarUrl || '',
+          bio: this.myProfile.status || 'Քիփս օգտատեր',
+          coords: this.currentCoords,
+          ghost: Boolean(this.myProfile.ghost)
+        };
+        fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
+
+      // 2. Query real Qips users from Vercel Cloud DB (excluding self)
+      const myId = String(this.myProfile.telegramId || this.realtimeService?.myPeerId || '');
+      const myUsername = (this.myProfile.username || '').replace(/^@/, '').trim();
+      const myPhone = (this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
+      const myName = (this.myProfile.name || '').trim();
+
+      const params = new URLSearchParams();
+      if (myId) params.set('exclude_id', myId);
+      if (myUsername) params.set('exclude_username', myUsername);
+      if (myPhone) params.set('exclude_phone', myPhone);
+      if (myName && myName !== 'Telegram User') params.set('exclude_name', myName);
+
+      const res = await fetch(`/api/users?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.users)) {
+          this.cloudQipsUsers = data.users.filter(u => !this.isSelfUser(u));
+          this.renderQipsCurrentUsersSection();
+        }
+      }
+
+      // 3. Query Ghost Mode status from cloud DB
+      if (myId || myPhone) {
+        const ghostRes = await fetch(`/api/ghost-status?user_id=${encodeURIComponent(myId)}&phone=${encodeURIComponent(myPhone)}`);
+        if (ghostRes.ok) {
+          const gData = await ghostRes.json();
+          if (gData.ok && gData.active && gData.expiresAt > Date.now()) {
+            this.ghostSub = {
+              active: true,
+              starsPaid: gData.starsPaid || 50,
+              phone: this.myProfile.phone || '',
+              expiresAt: gData.expiresAt
+            };
+            try {
+              localStorage.setItem('qips_ghost_sub_v1', JSON.stringify(this.ghostSub));
+            } catch {}
+            this.myProfile.ghost = true;
+            this.updateGhostBadgeUI();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Vercel cloud backend sync warning:', e);
+    }
   }
 
   getUserCanonicalKey(user) {
     if (!user) return '';
     const uname = (user.username || '').replace(/^@/, '').trim().toLowerCase();
     if (uname && uname !== 'user' && uname !== 'user_nearby') return `u:${uname}`;
-    if (user.telegramId) return `tg:${user.telegramId}`;
+    const tgId = user.telegramId || user.tg_id;
+    if (tgId) return `tg:${tgId}`;
     const phone = (user.phone || '').replace(/\D/g, '');
     if (phone) return `p:${phone}`;
     const name = (user.name || '').trim().toLowerCase();
@@ -930,24 +1011,24 @@ class AppController {
 
       if (!userMap.has(key)) {
         const fallbackSvg = p.fallbackAvatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
-        const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl, username: p.username }) || fallbackSvg;
+        const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl || p.photoUrl, username: p.username }) || fallbackSvg;
         userMap.set(key, {
           id: p.id,
           name: p.name || (p.username ? `@${p.username}` : 'Telegram User'),
           username: p.username || '',
           avatarUrl: realPhoto,
           fallbackAvatarUrl: fallbackSvg,
-          bio: p.bio || 'Քիփս օգտատեր',
+          bio: p.bio || p.status || 'Քիփս օգտատեր',
           online: Boolean(p.online !== false),
           distanceMeters: p.distanceMeters || 0,
-          telegramId: p.telegramId || null,
+          telegramId: p.telegramId || p.tg_id || null,
           phone: p.phone || null
         });
       } else {
         const existing = userMap.get(key);
         if (!existing.username && p.username) existing.username = p.username;
-        if ((!existing.avatarUrl || existing.avatarUrl.includes('data:image/svg')) && p.avatarUrl && !p.avatarUrl.includes('data:image/svg')) {
-          existing.avatarUrl = p.avatarUrl;
+        if ((!existing.avatarUrl || existing.avatarUrl.includes('data:image/svg')) && (p.avatarUrl || p.photoUrl) && !(p.avatarUrl || p.photoUrl).includes('data:image/svg')) {
+          existing.avatarUrl = p.avatarUrl || p.photoUrl;
         }
         if (p.online) existing.online = true;
       }
@@ -959,6 +1040,11 @@ class AppController {
     // 2. Add from realtime service
     if (this.realtimeService) {
       this.realtimeService.getAllKnownQipsUsers().forEach(addOrMergeCandidate);
+    }
+
+    // 3. Add from Vercel Cloud Database
+    if (Array.isArray(this.cloudQipsUsers)) {
+      this.cloudQipsUsers.forEach(addOrMergeCandidate);
     }
 
     return Array.from(userMap.values()).filter(u => !this.isSelfUser(u));
@@ -1049,24 +1135,59 @@ class AppController {
     });
   }
 
-  onClickBecomeQips(targetUser) {
+  async onClickBecomeQips(targetUser) {
     soundManager.playTap();
     soundManager.triggerHaptic('light');
 
-    if (!this.realtimeService) return;
+    if (!targetUser) return;
 
-    if (this.realtimeService.isMutualQipsWith(targetUser)) {
+    if (this.realtimeService?.isMutualQipsWith(targetUser)) {
       this.showMutualQipsMatchModal(targetUser);
       return;
     }
 
-    const result = this.realtimeService.expressQipsDesire(targetUser);
+    // Call Vercel Serverless Backend /api/qips-match
+    try {
+      const matchRes = await fetch('/api/qips-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromUser: {
+            id: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
+            telegramId: this.myProfile.telegramId || null,
+            username: (this.myProfile.username || '').replace(/^@/, '').trim(),
+            name: this.myProfile.name || 'Telegram User',
+            phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || ''
+          },
+          toUser: {
+            id: targetUser.id,
+            telegramId: targetUser.telegramId || null,
+            username: (targetUser.username || '').replace(/^@/, '').trim(),
+            name: targetUser.name,
+            phone: targetUser.phone || null
+          }
+        })
+      });
 
-    this.renderQipsDirectoryAndContacts();
-    this.renderCardsList();
+      if (matchRes.ok) {
+        const matchData = await matchRes.json();
+        if (matchData.mutual) {
+          this.handleMutualQipsMatch(targetUser);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('API /qips-match error:', err);
+    }
 
-    if (result.matched) {
-      this.handleMutualQipsMatch(targetUser);
+    if (this.realtimeService) {
+      const result = this.realtimeService.expressQipsDesire(targetUser);
+      this.renderQipsDirectoryAndContacts();
+      this.renderCardsList();
+
+      if (result.matched) {
+        this.handleMutualQipsMatch(targetUser);
+      }
     }
   }
 
@@ -1228,7 +1349,7 @@ class AppController {
   renderTelegramContactsSection() {
     if (!this.tgContactsListEl) return;
 
-    const displayed = this.tgContacts;
+    const displayed = this.tgContacts.filter(c => !this.isSelfUser(c));
 
     if (displayed.length === 0) {
       this.tgContactsListEl.innerHTML = `
@@ -1276,6 +1397,13 @@ class AppController {
         soundManager.triggerHaptic('light');
         btn.textContent = this.currentLang === 'en' ? 'Sending...' : 'Ուղարկվում է...';
         btn.disabled = true;
+
+        // Vercel serverless invite call
+        fetch('/api/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact })
+        }).catch(() => {});
 
         await sendAnonymousInviteViaBot(contact);
 
@@ -1342,12 +1470,34 @@ class AppController {
       statusEl.textContent = 'Միանում ենք Telegram Stars վճարային համակարգին (@QipsBot)...';
     }
 
-    const invoiceRes = await createGhostStarsInvoice({
-      isArmenian: isArm,
-      myProfile: this.myProfile,
-      currentCoords: this.currentCoords,
-      userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user'
-    });
+    // 1. Try Vercel Serverless Backend to create Stars invoice
+    let invoiceRes = null;
+    try {
+      const resp = await fetch('/api/create-stars-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
+          phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
+          currentCoords: this.currentCoords
+        })
+      });
+      if (resp.ok) {
+        invoiceRes = await resp.json();
+      }
+    } catch (e) {
+      console.warn('Backend create-stars-invoice error:', e);
+    }
+
+    // Fallback to client-side Telegram API if serverless endpoint had an issue
+    if (!invoiceRes || !invoiceRes.ok || !invoiceRes.invoiceUrl) {
+      invoiceRes = await createGhostStarsInvoice({
+        isArmenian: isArm,
+        myProfile: this.myProfile,
+        currentCoords: this.currentCoords,
+        userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user'
+      });
+    }
 
     if (payBtn) {
       payBtn.disabled = false;
@@ -1372,6 +1522,17 @@ class AppController {
       }
       tg.openInvoice(invoiceUrl, (status) => {
         if (status === 'paid') {
+          // Persist active subscription to cloud database
+          fetch('/api/ghost-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
+              phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
+              starsPaid: starsAmount
+            })
+          }).catch(() => {});
+
           this.activateGhostSubscription(starsAmount, this.myProfile.phone);
           if (this.ghostPaymentDialog) this.ghostPaymentDialog.close();
         } else if (status === 'cancelled') {
@@ -1445,6 +1606,7 @@ class AppController {
     }
 
     if (tabName === 'list') {
+      this.syncWithVercelCloudBackend();
       this.renderQipsDirectoryAndContacts();
     }
 
@@ -1711,7 +1873,10 @@ class AppController {
       });
     }
 
-    // Best Practice: Native Telegram Contact Share Picker
+    // Best Practice: Native Telegram Contact Share Picker (Dogs/Notcoin style)
+    this.btnNativeTgSharePicker?.addEventListener('click', () => {
+      this.shareToTelegramContacts();
+    });
     this.btnTgShareNative?.addEventListener('click', () => {
       this.shareToTelegramContacts();
     });
@@ -1912,7 +2077,8 @@ class AppController {
     document.getElementById('pill-all').textContent = t.filterAll;
     document.getElementById('pill-online').textContent = t.filterOnline;
     document.getElementById('pill-close').textContent = t.filterClose;
-    document.getElementById('pill-tech').textContent = t.filterTech;
+    const pillFemaleEl = document.getElementById('pill-female');
+    if (pillFemaleEl) pillFemaleEl.textContent = t.filterFemale;
     document.getElementById('pill-male').textContent = t.filterMale;
 
     if (this.searchInput) {
