@@ -90,6 +90,7 @@ class AppController {
     this.initEngines();
     this.setupEventListeners();
     this.applyTranslations();
+    this.syncProfilePageView();
     this.renderQipsDirectoryAndContacts();
 
     // Sync with Vercel Cloud Backend (Users, Ghost Status, Matches)
@@ -119,11 +120,6 @@ class AppController {
   }
 
   hasActiveGhostSubscription() {
-    const myPhone = (this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
-    const myUname = (this.myProfile.username || '').toLowerCase();
-    if (myPhone.includes('55161182') || myUname === 'tigranbagavan' || myUname === 'tigran') {
-      return true;
-    }
     this.ghostSub = this.loadGhostSubscription();
     return Boolean(this.ghostSub && this.ghostSub.expiresAt > Date.now());
   }
@@ -153,7 +149,7 @@ class AppController {
     }
   }
 
-  activateGhostSubscription(starsPaid = 50, phoneUsed = '') {
+  activateGhostSubscription(starsPaid = 500, phoneUsed = '') {
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days monthly subscription
     this.ghostSub = {
       active: true,
@@ -187,43 +183,7 @@ class AppController {
   }
 
   updateGhostBadgeUI() {
-    const badge = document.getElementById('ghost-sub-badge');
-    const headerGhostBtn = document.getElementById('header-ghost-btn');
-
-    const hasSub = this.hasActiveGhostSubscription();
-    const isGhostOn = Boolean(this.myProfile.ghost);
-
-    if (hasSub) {
-      const daysLeft = this.ghostSub?.expiresAt
-        ? Math.max(1, Math.ceil((this.ghostSub.expiresAt - Date.now()) / (1000 * 60 * 60 * 24)))
-        : 30;
-
-      if (badge) {
-        if (isGhostOn) {
-          badge.textContent = `Ակտիվ (${daysLeft} օր)`;
-          badge.style.background = 'linear-gradient(135deg, #d1fae5, #a7f3d0)';
-          badge.style.color = '#065f46';
-        } else {
-          badge.textContent = 'Անջատված';
-          badge.style.background = 'rgba(148,94,255,0.12)';
-          badge.style.color = 'var(--text-medium)';
-        }
-      }
-    } else {
-      const price = getGhostStarsPrice(this.myProfile, this.currentCoords);
-      if (badge) {
-        badge.textContent = `⭐️ ${price} Stars`;
-        badge.style.background = 'rgba(148,94,255,0.15)';
-        badge.style.color = 'var(--accent-primary)';
-      }
-    }
-
-    if (headerGhostBtn) {
-      headerGhostBtn.classList.toggle('is-active', isGhostOn);
-      headerGhostBtn.title = isGhostOn
-        ? 'Ghost Mode (Թաքնված ռեժիմ)՝ ԱԿՏԻՎ Է 👻'
-        : 'Ghost Mode (Թաքնված ռեժիմ)՝ Անջատված է';
-    }
+    const isGhostOn = Boolean(this.myProfile.ghost && this.hasActiveGhostSubscription());
 
     const toggleGhost = document.getElementById('toggle-ghost');
     if (toggleGhost) {
@@ -585,6 +545,7 @@ class AppController {
       radar: document.getElementById('radar-view'),
       map: document.getElementById('map-view'),
       list: document.getElementById('list-view'),
+      profile: document.getElementById('profile-view'),
       chat: document.getElementById('chat-view')
     };
 
@@ -608,7 +569,7 @@ class AppController {
     // Modals
     this.profileDialog = document.getElementById('profile-dialog');
     this.profileDialogBody = document.getElementById('profile-dialog-body');
-    this.settingsDialog = document.getElementById('settings-dialog');
+    this.settingsDialog = null;
     this.ghostPaymentDialog = document.getElementById('ghost-payment-dialog');
     this.qipsMatchDialog = document.getElementById('qips-match-dialog');
     this.qipsMatchDialogBody = document.getElementById('qips-match-dialog-body');
@@ -1476,44 +1437,24 @@ class AppController {
   }
 
   updateGhostModalPricePreview() {
-    const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
-    const stars = isArm ? 50 : 500;
-
-    const tierArm = document.getElementById('tier-row-arm');
-    const tierIntl = document.getElementById('tier-row-intl');
-    const infoEl = document.getElementById('ghost-phone-detected-info');
     const payBtn = document.getElementById('pay-ghost-stars-btn');
-
-    if (tierArm) tierArm.classList.toggle('active-tier', isArm);
-    if (tierIntl) tierIntl.classList.toggle('active-tier', !isArm);
-
-    if (infoEl) {
-      const phoneTxt = this.myProfile.phone ? ` (${this.myProfile.phone})` : '';
-      if (isArm) {
-        infoEl.innerHTML = `<span style="color:#059669; font-weight:700;">Հայկական հաշիվ${phoneTxt} • 50 ⭐️ / ամիս</span>`;
-      } else {
-        infoEl.innerHTML = `<span style="color:#d97706; font-weight:700;">🌍 Միջազգային հաշիվ${phoneTxt} • 500 ⭐️ / ամիս</span>`;
-      }
-    }
-
     if (payBtn) {
-      payBtn.textContent = `⭐️ Վճարել ${stars} Telegram Stars (Ամսական)`;
+      payBtn.textContent = '⭐️ Վճարել 500 Telegram Stars (30 Օր)';
     }
   }
 
   async handlePayGhostStars() {
     const statusEl = document.getElementById('ghost-payment-status-msg');
     const payBtn = document.getElementById('pay-ghost-stars-btn');
-
-    const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
-    const starsAmount = isArm ? 50 : 500;
+    const starsAmount = 500;
 
     if (payBtn) {
       payBtn.disabled = true;
-      payBtn.textContent = `⏳ Ստեղծվում է ${starsAmount} ⭐️ հաշիվ @QipsBot-ում...`;
+      payBtn.textContent = '⏳ Ստեղծվում է 500 ⭐️ հաշիվ @QipsBot-ում...';
     }
     if (statusEl) {
       statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--text-medium)';
       statusEl.textContent = 'Միանում ենք Telegram Stars վճարային համակարգին (@QipsBot)...';
     }
 
@@ -1539,7 +1480,6 @@ class AppController {
     // Fallback to client-side Telegram API if serverless endpoint had an issue
     if (!invoiceRes || !invoiceRes.ok || !invoiceRes.invoiceUrl) {
       invoiceRes = await createGhostStarsInvoice({
-        isArmenian: isArm,
         myProfile: this.myProfile,
         currentCoords: this.currentCoords,
         userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user'
@@ -1551,10 +1491,10 @@ class AppController {
       this.updateGhostModalPricePreview();
     }
 
-    if (!invoiceRes.ok || !invoiceRes.invoiceUrl) {
+    if (!invoiceRes || !invoiceRes.ok || !invoiceRes.invoiceUrl) {
       if (statusEl) {
         statusEl.style.color = '#dc2626';
-        statusEl.textContent = `Սխալ՝ ${invoiceRes.error || 'Չհաջողվեց ստեղծել հաշիվը'}`;
+        statusEl.textContent = `Սխալ՝ ${invoiceRes?.error || 'Չհաջողվեց ստեղծել հաշիվը'}`;
       }
       return;
     }
@@ -1565,7 +1505,7 @@ class AppController {
     if (tg && tg.initData && typeof tg.openInvoice === 'function') {
       if (statusEl) {
         statusEl.style.color = 'var(--text-medium)';
-        statusEl.textContent = `Բացվում է Telegram Stars (${starsAmount} ⭐️) պատուհանը...`;
+        statusEl.textContent = 'Բացվում է Telegram Stars (500 ⭐️) պատուհանը...';
       }
       tg.openInvoice(invoiceUrl, (status) => {
         if (status === 'paid') {
@@ -1576,11 +1516,11 @@ class AppController {
             body: JSON.stringify({
               userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
               phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
-              starsPaid: starsAmount
+              starsPaid: 500
             })
           }).catch(() => {});
 
-          this.activateGhostSubscription(starsAmount, this.myProfile.phone);
+          this.activateGhostSubscription(500, this.myProfile.phone);
           if (this.ghostPaymentDialog) this.ghostPaymentDialog.close();
         } else if (status === 'cancelled') {
           if (statusEl) {
@@ -1608,14 +1548,8 @@ class AppController {
 
   // 6. View Tabs Switching
   switchTab(tabName) {
-    if (tabName === 'profile') {
-      soundManager.triggerHaptic('light');
-      this.openSettingsModal();
-      return;
-    }
-
     if (this.activeTab === tabName) {
-      if (tabName === 'radar' || tabName === 'list') {
+      if (tabName === 'radar' || tabName === 'list' || tabName === 'profile') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
@@ -1648,8 +1582,12 @@ class AppController {
       }
     });
 
-    if (tabName === 'radar' || tabName === 'list') {
+    if (tabName === 'radar' || tabName === 'list' || tabName === 'profile') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (tabName === 'profile') {
+      this.syncProfilePageView();
     }
 
     if (tabName === 'list') {
@@ -1806,9 +1744,30 @@ class AppController {
   }
 
   openSettingsModal() {
-    soundManager.playTap();
+    this.switchTab('profile');
+  }
+
+  syncProfilePageView() {
     this.syncGhostStatusWithSub();
     this.updateGhostBadgeUI();
+
+    const avatarEl = document.getElementById('profile-page-avatar');
+    const nameEl = document.getElementById('profile-page-display-name');
+    const handleEl = document.getElementById('profile-page-display-handle');
+    const phoneEl = document.getElementById('profile-page-display-phone');
+
+    if (avatarEl) {
+      avatarEl.src = this.myProfile.avatarUrl || './logo.png';
+    }
+    if (nameEl) {
+      nameEl.textContent = this.myProfile.name || 'Telegram User';
+    }
+    if (handleEl) {
+      handleEl.textContent = this.myProfile.username ? `@${this.myProfile.username.replace(/^@/, '')}` : '';
+    }
+    if (phoneEl) {
+      phoneEl.textContent = this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '';
+    }
 
     const nameInput = document.getElementById('my-name-input');
     const statusInput = document.getElementById('my-status-input');
@@ -1816,12 +1775,11 @@ class AppController {
     const toggleGhost = document.getElementById('toggle-ghost');
     const realToggle = document.getElementById('toggle-real-mode');
 
-    if (nameInput) nameInput.value = this.myProfile.name;
-    if (statusInput) statusInput.value = this.myProfile.status;
-    if (toggleVisible) toggleVisible.checked = this.myProfile.visible;
+    if (nameInput) nameInput.value = this.myProfile.name || '';
+    if (statusInput) statusInput.value = this.myProfile.status || '';
+    if (toggleVisible) toggleVisible.checked = Boolean(this.myProfile.visible);
     if (toggleGhost) toggleGhost.checked = Boolean(this.myProfile.ghost && this.hasActiveGhostSubscription());
-    if (realToggle) realToggle.checked = this.isRealMode;
-    if (this.settingsDialog) this.settingsDialog.showModal();
+    if (realToggle) realToggle.checked = Boolean(this.isRealMode);
   }
 
   // 9. Setup Event Listeners
@@ -1831,38 +1789,6 @@ class AppController {
         this.switchTab(btn.dataset.tab);
       });
     });
-
-    const headerGhostBtn = document.getElementById('header-ghost-btn');
-    if (headerGhostBtn) {
-      headerGhostBtn.addEventListener('click', () => {
-        soundManager.playTap();
-        soundManager.triggerHaptic('light');
-
-        if (this.hasActiveGhostSubscription()) {
-          // Toggle Ghost Mode directly with 1 tap
-          this.myProfile.ghost = !this.myProfile.ghost;
-          try {
-            const saved = JSON.parse(localStorage.getItem('tma_my_profile') || '{}');
-            saved.ghost = this.myProfile.ghost;
-            localStorage.setItem('tma_my_profile', JSON.stringify(saved));
-          } catch {}
-
-          this.updateGhostBadgeUI();
-
-          if (this.realtimeService) {
-            this.realtimeService.myProfile = this.myProfile;
-            this.realtimeService.broadcastMyPresence();
-          }
-
-          if (this.myProfile.ghost) {
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.2 } });
-          }
-        } else {
-          // Open Ghost Mode payment modal to subscribe
-          this.openGhostPaymentModal();
-        }
-      });
-    }
 
     if (this.radarSlider) {
       this.radarSlider.addEventListener('input', (e) => {
@@ -2069,22 +1995,7 @@ class AppController {
     if (activateGhostDirectBtn) {
       activateGhostDirectBtn.addEventListener('click', () => {
         soundManager.playTap();
-        soundManager.triggerHaptic('success');
-        const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
-        const starsAmount = isArm ? 50 : 500;
-
-        fetch('/api/ghost-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
-            phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
-            starsPaid: starsAmount
-          })
-        }).catch(() => {});
-
-        this.activateGhostSubscription(starsAmount, this.myProfile.phone);
-        if (this.ghostPaymentDialog) this.ghostPaymentDialog.close();
+        this.handlePayGhostStars();
       });
     }
 
@@ -2098,25 +2009,28 @@ class AppController {
     if (closeSettingsBtn) {
       closeSettingsBtn.addEventListener('click', () => {
         soundManager.playTap();
-        this.settingsDialog.close();
+        this.settingsDialog?.close();
       });
     }
 
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', () => {
         soundManager.playTap();
-        this.myProfile.name = document.getElementById('my-name-input').value;
-        this.myProfile.status = document.getElementById('my-status-input').value;
-        this.myProfile.visible = document.getElementById('toggle-visible').checked;
+        const nameVal = document.getElementById('my-name-input')?.value;
+        const statusVal = document.getElementById('my-status-input')?.value;
+        if (nameVal) this.myProfile.name = nameVal;
+        if (statusVal) this.myProfile.status = statusVal;
+        this.myProfile.visible = document.getElementById('toggle-visible')?.checked ?? true;
 
-        const wantGhost = document.getElementById('toggle-ghost').checked;
+        const wantGhost = document.getElementById('toggle-ghost')?.checked;
         if (wantGhost && !this.hasActiveGhostSubscription()) {
           this.myProfile.ghost = false;
-          document.getElementById('toggle-ghost').checked = false;
+          const tgSwitch = document.getElementById('toggle-ghost');
+          if (tgSwitch) tgSwitch.checked = false;
           this.openGhostPaymentModal();
           return;
         }
-        this.myProfile.ghost = wantGhost;
+        this.myProfile.ghost = Boolean(wantGhost);
         this.updateGhostBadgeUI();
 
         try {
@@ -2131,7 +2045,10 @@ class AppController {
           this.realtimeService.myProfile = this.myProfile;
           this.realtimeService.broadcastMyPresence();
         }
-        this.settingsDialog.close();
+        this.syncProfilePageView();
+        const origText = saveSettingsBtn.textContent;
+        saveSettingsBtn.textContent = '✓ Պահպանված է';
+        setTimeout(() => { saveSettingsBtn.textContent = origText; }, 1800);
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
       });
     }
@@ -2150,7 +2067,7 @@ class AppController {
       });
     }
 
-    [this.profileDialog, this.settingsDialog, this.ghostPaymentDialog, this.qipsMatchDialog, this.firstContactsDialog].forEach(dialog => {
+    [this.profileDialog, this.ghostPaymentDialog, this.qipsMatchDialog, this.firstContactsDialog].forEach(dialog => {
       if (!dialog) return;
       dialog.addEventListener('click', (e) => {
         const rect = dialog.getBoundingClientRect();
@@ -2170,7 +2087,12 @@ class AppController {
     const t = translations[this.currentLang];
     const flagMap = { hy: '🇦🇲', en: '🇬🇧' };
 
-    document.getElementById('current-lang-code').textContent = flagMap[this.currentLang] || '🇦🇲';
+    const langCodeEl = document.getElementById('current-lang-code');
+    if (langCodeEl) langCodeEl.textContent = flagMap[this.currentLang] || '🇦🇲';
+
+    const langTextEl = document.getElementById('current-lang-text');
+    if (langTextEl) langTextEl.textContent = this.currentLang === 'en' ? 'English' : 'Հայերեն';
+
     document.getElementById('t-app-title').textContent = t.appTitle;
     document.title = `${t.appTitle} | @QipsBot`;
     const subEl = document.getElementById('t-app-subtitle');
@@ -2195,12 +2117,18 @@ class AppController {
       this.searchInput.placeholder = t.searchPlaceholder;
     }
 
-    document.getElementById('t-my-profile').textContent = t.myProfile;
-    document.getElementById('t-vis-title').textContent = t.visibleOnRadar;
-    document.getElementById('t-vis-desc').textContent = t.visibleDesc;
-    document.getElementById('t-stealth-title').textContent = t.stealthMode;
-    document.getElementById('t-stealth-desc').textContent = t.stealthDesc;
-    document.getElementById('save-settings-btn').textContent = t.saveProfile;
+    const myProfileEl = document.getElementById('t-my-profile');
+    if (myProfileEl) myProfileEl.textContent = t.myProfile;
+    const visTitleEl = document.getElementById('t-vis-title');
+    if (visTitleEl) visTitleEl.textContent = t.visibleOnRadar;
+    const visDescEl = document.getElementById('t-vis-desc');
+    if (visDescEl) visDescEl.textContent = t.visibleDesc;
+    const stealthTitleEl = document.getElementById('t-stealth-title');
+    if (stealthTitleEl) stealthTitleEl.textContent = t.stealthMode;
+    const stealthDescEl = document.getElementById('t-stealth-desc');
+    if (stealthDescEl) stealthDescEl.textContent = t.stealthDesc;
+    const saveBtnEl = document.getElementById('save-settings-btn');
+    if (saveBtnEl) saveBtnEl.textContent = t.saveProfile;
 
     if (this.radarEngine) {
       this.radarEngine.setLanguage(this.currentLang);

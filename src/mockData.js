@@ -174,31 +174,5 @@ export function isMaleName(name = '', explicitGender = null) {
   return true; // Default to male ('արու')
 }
 
-// User's full Telegram & Phone contacts circle (people who do NOT use Qips yet, ready to be invited)
-export const DEFAULT_TELEGRAM_CONTACTS = [
-  { id: 'c_tigran', name: 'Տիգրան Պետրոսյան', username: 'tigran_petrosyan', phone: '+374 55 161182', invited: false },
-  { id: 'c_anahit', name: 'Անահիտ Սարգսյան', username: 'anahit_sargsyan', phone: '+374 77 482910', invited: false },
-  { id: 'c_davit', name: 'Դավիթ Հարությունյան', username: 'davit_harutyunyan', phone: '+374 91 304958', invited: false },
-  { id: 'c_sona', name: 'Սոնա Մկրտչյան', username: 'sona_mkrtchyan', phone: '+374 94 883920', invited: false },
-  { id: 'c_gor', name: 'Գոռ Գրիգորյան', username: 'gor_grigoryan', phone: '+374 98 127394', invited: false },
-  { id: 'c_mariam', name: 'Մարիամ Հակոբյան', username: 'mariam_hakobyan', phone: '+374 93 458291', invited: false },
-  { id: 'c_arman', name: 'Արման Վարդանյան', username: 'arman_vardanyan', phone: '+374 99 773829', invited: false },
-  { id: 'c_mane', name: 'Մանե Կարապետյան', username: 'mane_karapetyan', phone: '+374 41 829301', invited: false },
-  { id: 'c_karen', name: 'Կարեն Ղազարյան', username: 'karen_ghazaryan', phone: '+374 95 628194', invited: false },
-  { id: 'c_ani', name: 'Անի Ստեփանյան', username: 'ani_stepanyan', phone: '+374 77 551928', invited: false },
-  { id: 'c_vahan', name: 'Վահան Մելքոնյան', username: 'vahan_melkonyan', phone: '+374 94 382910', invited: false },
-  { id: 'c_lilit', name: 'Լիլիթ Հովհաննիսյան', username: 'lilit_hovhannisyan', phone: '+374 98 447382', invited: false },
-  { id: 'c_narek', name: 'Նարեկ Ավագյան', username: 'narek_avagyan', phone: '+374 91 228491', invited: false },
-  { id: 'c_tatev', name: 'Տաթև Բարսեղյան', username: 'tatev_barseghyan', phone: '+374 93 118294', invited: false },
-  { id: 'c_hayk', name: 'Հայկ Մնացականյան', username: 'hayk_mnatsakanyan', phone: '+374 99 663820', invited: false },
-  { id: 'c_elen', name: 'Էլեն Ասատրյան', username: 'elen_asatryan', phone: '+374 43 992810', invited: false },
-  { id: 'c_artur', name: 'Արթուր Սիմոնյան', username: 'artur_simonyan', phone: '+374 95 771829', invited: false },
-  { id: 'c_diana', name: 'Դիանա Պողոսյան', username: 'diana_poghosyan', phone: '+374 77 882910', invited: false },
-  { id: 'c_gagik', name: 'Գագիկ Խաչատրյան', username: 'gagik_khachatryan', phone: '+374 94 552918', invited: false },
-  { id: 'c_ruzan', name: 'Ռուզան Գևորգյան', username: 'ruzan_gevorgyan', phone: '+374 98 338192', invited: false },
-  { id: 'c_samvel', name: 'Սամվել Մանուկյան', username: 'samvel_manukyan', phone: '+374 91 773821', invited: false },
-  { id: 'c_anna', name: 'Աննա Բադալյան', username: 'anna_badalyan', phone: '+374 93 229104', invited: false },
-  { id: 'c_ashot', name: 'Աշոտ Բաբայան', username: 'ashot_babayan', phone: '+374 99 448291', invited: false },
-  { id: 'c_hasmik', name: 'Հասմիկ Դանիելյան', username: 'hasmik_danielyan', phone: '+374 41 661928', invited: false },
-  { id: 'c_ruben', name: 'Ռուբեն Թորոսյան', username: 'ruben_torosyan', phone: '+374 95 881920', invited: false }
-];
+// Pure real contacts only (zero artificial / mock contacts)
+export const DEFAULT_TELEGRAM_CONTACTS = [];

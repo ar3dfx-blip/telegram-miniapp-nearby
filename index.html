@@ -50,16 +50,6 @@
           <h1 class="brand-title brand-title-centered" id="t-app-title">Քիփս</h1>
 
           <div class="header-actions">
-            <!-- Ghost Mode Quick Badge (Visible when Ghost Mode is ON) -->
-            <button class="icon-btn" id="header-ghost-btn" title="Ghost Mode (Թաքնված ռեժիմ)" style="width:auto; padding:0 12px; border-radius:20px; gap:5px; font-size:12px; font-weight:700;">
-              <span>👻</span>
-              <span id="header-ghost-status">Ghost</span>
-            </button>
-
-            <!-- Language switcher -->
-            <button class="icon-btn" id="lang-toggle-btn" title="Լեզու / Language">
-              <span id="current-lang-code" style="font-weight:700; font-size:12px;">🇦🇲</span>
-            </button>
           </div>
         </div>
       </header>
@@ -196,18 +186,13 @@
             </div>
 
             <!-- Native Telegram Picker Action Button (Dogs/Notcoin style) -->
-            <div style="margin: 4px 0 16px 0;">
-              <button class="btn-native-tg-picker" id="btn-native-tg-share-picker" title="Հրավիրել Ձեր Telegram-ի կոնտակտներին">
+            <div style="margin: 8px 0 4px 0;">
+              <button class="btn-native-tg-picker" id="btn-native-tg-share-picker" title="Qpvel">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
                 </svg>
-                <span>Հրավիրել Telegram-ի Կոնտակտներից</span>
+                <span>Qpvel</span>
               </button>
-            </div>
-
-            <!-- Telegram Contacts List -->
-            <div class="qips-users-list" id="tg-contacts-invite-list">
-              <!-- Populated dynamically by JS -->
             </div>
           </div>
         </section>
@@ -215,6 +200,85 @@
         <!-- 4. CHAT VIEW -->
         <section id="chat-view" style="display:none; flex:1;">
           <!-- Managed by chat.js -->
+        </section>
+
+        <!-- 5. PROFILE & ACCOUNT VIEW (Full Page View) -->
+        <section id="profile-view" class="profile-view-container" style="display:none; flex:1; flex-direction:column; padding: 14px 14px 100px 14px; overflow-y:auto;">
+          
+          <!-- Profile Hero Card -->
+          <div class="profile-page-hero-card">
+            <div class="profile-hero-avatar-wrap">
+              <img id="profile-page-avatar" src="./logo.png" alt="Profile" class="profile-page-avatar-img" />
+            </div>
+            <div class="profile-page-meta">
+              <h2 id="profile-page-display-name" class="profile-page-name">Tigran</h2>
+              <div id="profile-page-display-handle" class="profile-page-handle">@TigranBagavan</div>
+              <div id="profile-page-display-phone" class="profile-page-phone">+374 55 161182</div>
+            </div>
+          </div>
+
+          <!-- Profile Settings Card -->
+          <div class="profile-page-section-card">
+            <div class="section-label" style="margin-bottom:14px;">ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ</div>
+
+            <div class="toggle-row">
+              <div class="toggle-label-wrap">
+                <span class="toggle-title" id="t-vis-title">Տեսանելի եմ ռադարում</span>
+                <span class="toggle-desc" id="t-vis-desc">Մոտակա մարդիկ կկարողանան գտնել Ձեզ</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-visible" checked />
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-label-wrap">
+                <span class="toggle-title" id="t-stealth-title">Թաքնված ռեժիմ (Ghost)</span>
+                <span class="toggle-desc" id="t-stealth-desc">Դիտել մոտակայքը անտեսանելի (500 ⭐️)</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-ghost" />
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-label-wrap">
+                <span class="toggle-title" id="t-real-title">Բոլոր Telegram Օգտատերերը</span>
+                <span class="toggle-desc" id="t-real-desc">Ցուցադրել բոլոր մոտակա Telegram կոնտակտներին</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-real-mode" checked />
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div class="settings-group" style="margin-top:14px;">
+              <label class="section-label" id="t-my-name-label">Իմ Անունը</label>
+              <input type="text" id="my-name-input" class="settings-input" value="Tigran" />
+            </div>
+
+            <div class="settings-group">
+              <label class="section-label" id="t-my-status-label">Կարգավիճակ / Կենսագրություն</label>
+              <input type="text" id="my-status-input" class="settings-input" value="Սուրճ եմ խմում Երևանում ☕" />
+            </div>
+
+            <div style="margin-top:16px;">
+              <button class="btn-chat-primary" id="save-settings-btn" style="width:100%;">
+                Պահպանել Կարգավորումները
+              </button>
+            </div>
+          </div>
+
+          <!-- Language Selection Button (At the very bottom, horizontally centered) -->
+          <div class="profile-page-lang-container">
+            <button class="btn-lang-pill" id="lang-toggle-btn" title="Լեզու / Language">
+              <span id="current-lang-code" style="font-size:16px;">🇦🇲</span>
+              <span id="current-lang-text" style="font-weight:700; font-size:13.5px; margin-left:6px;">Հայերեն</span>
+            </button>
+          </div>
+
         </section>
 
       </main>
@@ -263,66 +327,6 @@
         </div>
       </dialog>
 
-      <!-- User Settings Modal -->
-      <dialog id="settings-dialog" class="custom-dialog">
-        <div class="modal-content">
-          <div class="modal-header" style="display:flex; align-items:center; gap:10px;">
-            <img src="./logo.png" alt="Քիփս" style="width:34px; height:34px; border-radius:50%; object-fit:cover; box-shadow:0 2px 8px rgba(255,140,105,0.4);" />
-            <h3 class="modal-title" id="t-my-profile" style="margin:0;">Իմ Պրոֆիլը և Կարգավորումները</h3>
-            <button class="modal-close-btn" id="close-settings-btn" style="margin-left:auto;">✕</button>
-          </div>
-
-          <div class="toggle-row">
-            <div class="toggle-label-wrap">
-              <span class="toggle-title" id="t-vis-title">Տեսանելի եմ ռադարում</span>
-              <span class="toggle-desc" id="t-vis-desc">Մոտակա մարդիկ կկարողանան գտնել Ձեզ</span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="toggle-visible" checked />
-              <span class="slider-round"></span>
-            </label>
-          </div>
-
-          <div class="toggle-row">
-            <div class="toggle-label-wrap">
-              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <span class="toggle-title" id="t-stealth-title">Թաքնված ռեժիմ (Ghost)</span>
-                <span class="stars-pill-badge" id="ghost-sub-badge">⭐️ 50 / 500 Stars</span>
-              </div>
-              <span class="toggle-desc" id="t-stealth-desc">Դիտել մոտակայքը անտեսանելի (+374՝ 50 ⭐️/ամիս, այլ՝ 500 ⭐️/ամիս)</span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="toggle-ghost" />
-              <span class="slider-round"></span>
-            </label>
-          </div>
-
-          <div class="toggle-row">
-            <div class="toggle-label-wrap">
-              <span class="toggle-title" id="t-real-title">Բոլոր Telegram Օգտատերերը</span>
-              <span class="toggle-desc" id="t-real-desc">Ցուցադրել բոլոր մոտակա Telegram կոնտակտներին</span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="toggle-real-mode" checked />
-              <span class="slider-round"></span>
-            </label>
-          </div>
-
-          <div class="settings-group">
-            <label class="section-label" id="t-my-name-label">Իմ Անունը</label>
-            <input type="text" id="my-name-input" class="settings-input" value="Դուք (Օգտատեր)" />
-          </div>
-
-          <div class="settings-group">
-            <label class="section-label" id="t-my-status-label">Կարգավիճակ / Կենսագրություն</label>
-            <input type="text" id="my-status-input" class="settings-input" value="Սուրճ եմ խմում Երևանում ☕" />
-          </div>
-
-          <div class="profile-modal-actions">
-            <button class="btn-chat-primary" id="save-settings-btn">Պահպանել Կարգավորումները</button>
-          </div>
-        </div>
-      </dialog>
 
       <!-- Ghost Mode Telegram Stars Payment Modal (Auto-detected from Telegram Account) -->
       <dialog id="ghost-payment-dialog" class="custom-dialog">
@@ -334,26 +338,22 @@
           </div>
 
           <div class="profile-section-card" style="text-align:left;">
-            <div class="section-label">ՍԱԿԱԳՆԵՐ (ԱՎՏՈՄԱՏ ՈՐՈՇՎԱԾ ԸՍՏ TELEGRAM ՀԱՇՎԻ)</div>
-            <div class="ghost-tier-row" id="tier-row-arm">
-              <span>🇦🇲 <strong>+374</strong> Հայկական հեռախոսահամարներ</span>
-              <span class="stars-price-tag">⭐️ 50 / ամիս</span>
-            </div>
-            <div class="ghost-tier-row" id="tier-row-intl" style="margin-top:8px;">
-              <span>🌍 Այլ երկրների համարներ (ոչ +374)</span>
-              <span class="stars-price-tag">⭐️ 500 / ամիս</span>
+            <div class="section-label">GHOST MODE ԲԱԺԱՆՈՐԴԱԳՐՈՒԹՅՈՒՆ</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:14px; background:var(--bg-primary); box-shadow:var(--neu-inset-sm);">
+              <div>
+                <div style="font-weight:700; color:var(--text-dark); font-size:14px;">30 Օր Անտեսանելի ռեժիմ</div>
+                <div style="font-size:12px; color:var(--text-medium); margin-top:2px;">Դիտել մոտակայքը անտեսանելի</div>
+              </div>
+              <span class="stars-price-tag" style="font-size:14px; font-weight:800; color:#f59e0b;">⭐️ 500 Stars</span>
             </div>
             <div id="ghost-phone-detected-info" style="font-size:12px; color:var(--text-medium); margin-top:10px; padding-top:8px; border-top:1px solid var(--track-color);">
-              Սակագինը որոշվել է ավտոմատ՝ ըստ Ձեր Telegram հաշվի տվյալների
+              Վճարումը կատարվում է Telegram Stars-ով (XTR)
             </div>
           </div>
 
           <div class="profile-modal-actions">
-            <button class="btn-chat-primary" id="pay-ghost-stars-btn" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color:#1e293b; font-weight:800;">
-              ⭐️ Վճարել 50 Telegram Stars (Ամսական)
-            </button>
-            <button class="btn-chat-secondary" id="activate-ghost-direct-btn" style="width:100%; margin-top:8px; padding:10px 16px; border-radius:14px; font-weight:700; font-size:13px; background:var(--bg-secondary); border:1px solid rgba(148,94,255,0.3); color:var(--accent-primary); cursor:pointer;">
-              👻 Ակտիվացնել Ghost Mode (30 Օր)
+            <button class="btn-chat-primary" id="pay-ghost-stars-btn" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color:#1e293b; font-weight:800; width:100%;">
+              ⭐️ Վճարել 500 Telegram Stars (30 Օր)
             </button>
             <div id="ghost-payment-status-msg" style="font-size:12px; text-align:center; color:var(--text-color); display:none; margin-top:8px;"></div>
           </div>

@@ -83,13 +83,7 @@ export function isArmenianTelegramAccount(myProfile = {}, currentCoords = null) 
 }
 
 export function getGhostStarsPrice(myProfileOrPhone = {}, currentCoords = null) {
-  if (typeof myProfileOrPhone === 'string') {
-    if (myProfileOrPhone.trim()) {
-      return isArmenianPhone(myProfileOrPhone) ? 50 : 500;
-    }
-    return isArmenianTelegramAccount({}, currentCoords) ? 50 : 500;
-  }
-  return isArmenianTelegramAccount(myProfileOrPhone, currentCoords) ? 50 : 500;
+  return 500;
 }
 
 export async function callBotApi(method, payload = {}) {
@@ -204,17 +198,12 @@ export async function syncQipsBotConfig() {
 
 // Create a REAL Telegram Stars (XTR) monthly subscription invoice link via @QipsBot
 export async function createGhostStarsInvoice({ isArmenian = null, myProfile = {}, currentCoords = null, userId = 'user' }) {
-  const armAccount = typeof isArmenian === 'boolean'
-    ? isArmenian
-    : isArmenianTelegramAccount(myProfile, currentCoords);
-  const starsAmount = armAccount ? 50 : 500;
+  const starsAmount = 500;
 
   const title = 'Ghost Mode (Թաքնված ռեժիմ) — Քիփս';
-  const description = armAccount
-    ? 'Ամսական բաժանորդագրություն (+374 հայկական հաշիվ՝ 50 ⭐️ / ամիս)՝ ռադարում անտեսանելի լինելու համար'
-    : 'Ամսական բաժանորդագրություն (Միջազգային սակագին՝ 500 ⭐️ / ամիս)՝ ռադարում անտեսանելի լինելու համար';
+  const description = 'Ամսական բաժանորդագրություն (500 ⭐️)՝ ռադարում անտեսանելի լինելու համար';
 
-  const payloadStr = `qips_ghost_${starsAmount}_${userId}_${Date.now()}`;
+  const payloadStr = `qips_ghost_500_${userId}_${Date.now()}`;
 
   // 1. Try creating monthly subscription invoice (30 days = 2592000s) in Telegram Stars (XTR)
   let response = await callBotApi('createInvoiceLink', {

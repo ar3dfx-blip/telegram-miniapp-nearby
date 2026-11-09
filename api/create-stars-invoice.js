@@ -16,23 +16,11 @@ export default async function handler(req, res) {
   try {
     const { userId, phone, currentCoords } = req.body || {};
 
-    const rawPhone = String(phone || '').replace(/\D/g, '');
-    const isArmPhone = rawPhone.startsWith('374') || rawPhone.startsWith('0');
-    const isArmCoord = currentCoords &&
-      currentCoords.lat >= 38.8 && currentCoords.lat <= 41.3 &&
-      currentCoords.lng >= 43.4 && currentCoords.lng <= 46.7;
+    const starsAmount = 500; // Flat 500 Telegram Stars for all users
 
-    const isArmenian = Boolean(isArmPhone || isArmCoord);
-    const starsAmount = isArmenian ? 50 : 500;
-
-    const title = isArmenian
-      ? 'Ghost Mode (Թաքնված ռեժիմ) — 1 Ամիս'
-      : 'Ghost Mode (Stealth Mode) — 1 Month';
-    const description = isArmenian
-      ? `Անտեսանելի ռեժիմ Քիփսում 30 օրով (+374 սակագին՝ ${starsAmount} ⭐️)`
-      : `Stealth browsing in Qips for 30 days (Rate: ${starsAmount} ⭐️)`;
-
-    const payload = `ghost_${userId || 'u'}_${starsAmount}_${Date.now()}`;
+    const title = 'Ghost Mode (Թաքնված ռեժիմ) — 30 Օր';
+    const description = 'Անտեսանելի ռեժիմ Քիփսում 30 օրով (500 ⭐️)';
+    const payload = `ghost_${userId || 'u'}_500_${Date.now()}`;
 
     const tgRes = await createStarsInvoice({
       title,
@@ -45,8 +33,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         invoiceUrl: tgRes.result,
-        amount: starsAmount,
-        isArmenian
+        amount: starsAmount
       });
     }
 

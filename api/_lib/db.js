@@ -112,20 +112,6 @@ export async function getGhostStatus(userId, phone) {
   await loadDataFromCloud();
   const rawPhone = (phone || '').replace(/\D/g, '');
 
-  const isOwner = Boolean(
-    (rawPhone && rawPhone.includes('55161182')) ||
-    (userId && String(userId).toLowerCase().includes('tigran'))
-  );
-  if (isOwner) {
-    return {
-      active: true,
-      daysLeft: 365,
-      expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
-      starsPaid: 50,
-      isOwner: true
-    };
-  }
-
   const sub =
     (userId && memoryCache.ghostSubscriptions[String(userId)]) ||
     (rawPhone && memoryCache.ghostSubscriptions[rawPhone]);
@@ -140,7 +126,7 @@ export async function getGhostStatus(userId, phone) {
     active,
     daysLeft,
     expiresAt: sub.expiresAt,
-    starsPaid: sub.starsPaid || (rawPhone.includes('374') ? 50 : 500)
+    starsPaid: sub.starsPaid || 500
   };
 }
 
@@ -149,7 +135,7 @@ export async function activateGhostSubscription(userId, phone, starsPaid) {
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
   const subData = {
     active: true,
-    starsPaid: Number(starsPaid) || 50,
+    starsPaid: Number(starsPaid) || 500,
     phone: phone || '',
     userId: String(userId || ''),
     activatedAt: Date.now(),
