@@ -264,7 +264,7 @@ html, body {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(calc(100% - 64px), 240px);
+  width: min(calc(100% - 48px), 288px);
   margin: 0;
   z-index: 9999; /* Highest priority: floating above all other layers */
   display: flex;
@@ -1914,3 +1914,268 @@ input:checked + .slider-round:before {
   margin-top: 10px;
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
+
+/* ==========================================================================
+   6. Qips Users & Telegram Contacts View + Ghost Stars Modal (Neumorphic 3D)
+   ========================================================================== */
+.qips-section-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--neu-flat-card);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.qips-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.qips-section-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.qips-section-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  box-shadow: var(--neu-flat-sm);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.qips-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 3px;
+}
+
+.qips-section-subtitle {
+  font-size: 12px;
+  color: var(--text-color);
+  line-height: 1.45;
+}
+
+.qips-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qips-user-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  border-radius: 18px;
+  box-shadow: var(--neu-flat-sm);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qips-user-row-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--neu-flat);
+}
+
+.qips-user-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.qips-user-avatar-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: var(--neu-flat-sm);
+  border: 2px solid #ffffff;
+}
+
+.qips-user-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.qips-user-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.qips-user-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qips-user-handle {
+  font-size: 12px;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* "Դարձիր Քիփս" Button States */
+.btn-become-qips {
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--accent-coral), var(--accent-coral-light));
+  color: #ffffff;
+  box-shadow: var(--neu-btn-accent);
+  transition: all 0.2s ease;
+}
+
+.btn-become-qips:hover {
+  transform: translateY(-1px);
+}
+
+.btn-become-qips:active {
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.25);
+  transform: translateY(1px);
+}
+
+.btn-become-qips.is-secret-pending {
+  background: var(--bg-primary);
+  color: var(--accent-primary);
+  border: 1px solid rgba(148, 94, 255, 0.35);
+  box-shadow: var(--neu-inset-sm);
+}
+
+.btn-become-qips.is-mutual-matched {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: #ffffff;
+  box-shadow: var(--neu-btn-purple);
+}
+
+/* Anonymous Invite Button */
+.btn-anon-invite {
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--neu-flat-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-anon-invite:hover {
+  color: var(--accent-coral);
+  box-shadow: var(--neu-flat);
+}
+
+.btn-anon-invite:active {
+  box-shadow: var(--neu-inset-sm);
+}
+
+.btn-anon-invite.is-invited {
+  color: #059669;
+  box-shadow: var(--neu-inset-sm);
+}
+
+.tg-contact-add-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--bg-primary);
+  padding: 10px;
+  border-radius: 16px;
+  box-shadow: var(--neu-inset-sm);
+}
+
+/* Telegram Stars Badges & Tiers */
+.stars-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #b45309;
+  box-shadow: var(--neu-flat-sm);
+}
+
+.ghost-tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  box-shadow: var(--neu-inset-sm);
+  font-size: 13px;
+  color: var(--text-dark);
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.ghost-tier-row.active-tier {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.stars-price-tag {
+  font-weight: 800;
+  color: #d97706;
+  white-space: nowrap;
+}
+
+#header-ghost-btn {
+  display: none;
+  color: var(--accent-primary);
+}
+
+#header-ghost-btn.is-active {
+  display: inline-flex;
+  background: var(--bg-secondary);
+  box-shadow: var(--neu-inset-sm);
+  border-color: rgba(148, 94, 255, 0.4);
+}
+

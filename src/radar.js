@@ -407,11 +407,11 @@ export class RadarEngine {
         const nameStr = person.name.split(' ')[0];
         const unit = this.lang === 'hy' ? 'մ' : 'm';
         const dText = (Number.isInteger(person.distanceMeters) ? person.distanceMeters : person.distanceMeters.toFixed(1)) + unit;
-        
+
         ctx.save();
         ctx.font = '600 10px Inter, -apple-system, sans-serif';
         ctx.textAlign = 'center';
-        
+
         // Card pill background
         const textWidth = Math.max(ctx.measureText(nameStr).width, ctx.measureText(dText).width) + 12;
         ctx.fillStyle = '#ffffff';
@@ -420,7 +420,7 @@ export class RadarEngine {
         ctx.beginPath();
         ctx.roundRect(blip.x - textWidth / 2, blip.y - 28, textWidth, 18, 6);
         ctx.fill();
-        
+
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#2a2e37';
         ctx.fillText(`${nameStr} • ${dText}`, blip.x, blip.y - 15);

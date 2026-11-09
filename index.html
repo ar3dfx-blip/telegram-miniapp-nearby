@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>Քիփս | Telegram Mini App</title>
+    <title>Քիփս | Telegram Mini App (@QipsBot)</title>
     
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -42,6 +42,12 @@
           </div>
 
           <div class="header-actions">
+            <!-- Ghost Mode Quick Badge (Visible when Ghost Mode is ON) -->
+            <button class="icon-btn" id="header-ghost-btn" title="Ghost Mode (Թաքնված ռեժիմ)" style="width:auto; padding:0 12px; border-radius:20px; gap:5px; font-size:12px; font-weight:700;">
+              <span>👻</span>
+              <span id="header-ghost-status">Ghost</span>
+            </button>
+
             <!-- Language switcher -->
             <button class="icon-btn" id="lang-toggle-btn" title="Լեզու / Language">
               <span id="current-lang-code" style="font-weight:700; font-size:12px;">🇦🇲</span>
@@ -142,8 +148,87 @@
           </button>
         </section>
 
-        <!-- Legacy List View Placeholder -->
-        <section id="list-view" class="list-view-container" style="display:none;"></section>
+        <!-- 3. QIPS USERS & TELEGRAM CONTACTS PAGE -->
+        <section id="list-view" class="list-view-container" style="display:none;">
+          <!-- TOP SECTION: Current Qips App Users List with "Դարձիր Քիփս" button -->
+          <div class="qips-section-card">
+            <div class="qips-section-header">
+              <div class="qips-section-title-row">
+                <span class="qips-section-icon">💞</span>
+                <div>
+                  <h2 class="qips-section-title" id="t-qips-users-title">Qips Հավելվածի Օգտատերեր</h2>
+                  <p class="qips-section-subtitle" id="t-qips-users-desc">
+                    Սեղմեք «Դարձիր Քիփս»՝ մտերմանալու ցանկություն հայտնելու համար։ Մինչև երկուսդ էլ չհաստատեք, պահպանվում է բացարձակ գաղտնիություն 🔒
+                  </p>
+                </div>
+              </div>
+              <span class="stat-badge online-stat" id="qips-users-count-badge">0 օգտատեր</span>
+            </div>
+
+            <!-- Search Qips Users -->
+            <div class="search-box-wrapper" style="margin-bottom: 12px;">
+              <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                id="qips-users-search-input"
+                class="search-input"
+                placeholder="Փնտրել Qips օգտատիրոջ անունով կամ @username-ով..."
+              />
+            </div>
+
+            <!-- Qips Current Users List -->
+            <div class="qips-users-list" id="qips-current-users-list">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- BOTTOM SECTION: Telegram Contacts List with Anonymous Invite via @QipsBot -->
+          <div class="qips-section-card">
+            <div class="qips-section-header">
+              <div class="qips-section-title-row">
+                <span class="qips-section-icon">🕵️‍♂️</span>
+                <div>
+                  <h2 class="qips-section-title" id="t-tg-contacts-title">Իմ Տելեգրամյան Կոնտակտները</h2>
+                  <p class="qips-section-subtitle" id="t-tg-contacts-desc">
+                    Ուղարկեք Qips-ին միանալու անանուն հրավեր @QipsBot-ի կողմից։ Ստացողը չի կարող պարզել, թե ով է իրեն հրավիրել 🔒
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add or Import Telegram Contact Row -->
+            <div class="tg-contact-add-bar">
+              <input
+                type="text"
+                id="add-tg-contact-name"
+                class="settings-input"
+                placeholder="Կոնտակտի անունը"
+                style="flex:1; min-width: 110px;"
+              />
+              <input
+                type="text"
+                id="add-tg-contact-user"
+                class="settings-input"
+                placeholder="@username կամ +374..."
+                style="flex:1.2; min-width: 130px;"
+              />
+              <button class="btn-profile-secondary" id="add-tg-contact-btn" title="Ավելացնել ցուցակում">
+                ➕ Ավելացնել
+              </button>
+              <button class="btn-profile-secondary" id="import-device-contacts-btn" title="Ներմուծել հեռախոսի/Telegram կոնտակտները">
+                📱 Կոնտակտներ
+              </button>
+            </div>
+
+            <!-- Telegram Contacts List -->
+            <div class="qips-users-list" id="tg-contacts-invite-list">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+        </section>
 
         <!-- 4. CHAT VIEW -->
         <section id="chat-view" style="display:none; flex:1;">
@@ -170,6 +255,12 @@
           </svg>
           <span id="t-tab-map" style="display:none;">Քարտեզ</span>
         </button>
+        <button class="nav-tab-btn" data-tab="list" id="tab-qips-btn" title="Դարձիր Քիփս և Կոնտակտներ">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span id="t-tab-list" style="display:none;">Քիփս</span>
+        </button>
         <button class="nav-tab-btn" data-tab="profile" id="tab-profile-btn" title="Իմ պրոֆիլը և կարգավորումները">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -177,7 +268,6 @@
           </svg>
           <span id="t-tab-profile" style="display:none;">Պրոֆիլ</span>
         </button>
-        <span id="t-tab-list" style="display:none;"></span>
       </nav>
 
       <!-- ==========================================================================
@@ -213,8 +303,11 @@
 
           <div class="toggle-row">
             <div class="toggle-label-wrap">
-              <span class="toggle-title" id="t-stealth-title">Թաքնված ռեժիմ (Ghost)</span>
-              <span class="toggle-desc" id="t-stealth-desc">Դիտել մոտակայքը անտեսանելի</span>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span class="toggle-title" id="t-stealth-title">Թաքնված ռեժիմ (Ghost)</span>
+                <span class="stars-pill-badge" id="ghost-sub-badge">⭐️ 50 / 500 Stars</span>
+              </div>
+              <span class="toggle-desc" id="t-stealth-desc">Դիտել մոտակայքը անտեսանելի (+374՝ 50 ⭐️/ամիս, այլ՝ 500 ⭐️/ամիս)</span>
             </div>
             <label class="switch">
               <input type="checkbox" id="toggle-ghost" />
@@ -245,6 +338,91 @@
 
           <div class="profile-modal-actions">
             <button class="btn-chat-primary" id="save-settings-btn">Պահպանել Կարգավորումները</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Ghost Mode Telegram Stars Payment Modal -->
+      <dialog id="ghost-payment-dialog" class="custom-dialog">
+        <div class="modal-content">
+          <div class="modal-header" style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:26px;">👻</span>
+            <h3 class="modal-title" style="margin:0;">Ghost Mode • Telegram Stars</h3>
+            <button class="modal-close-btn" id="close-ghost-pay-btn" style="margin-left:auto;">✕</button>
+          </div>
+
+          <div class="profile-section-card" style="text-align:left;">
+            <div class="section-label">ՍԱԿԱԳՆԵՐ (ԱՄՍԱԿԱՆ ԲԱԺԱՆՈՐԴԱԳՐՈՒԹՅՈՒՆ)</div>
+            <div class="ghost-tier-row" id="tier-row-arm">
+              <span>🇦🇲 <strong>+374</strong> Հայկական հեռախոսահամարներ</span>
+              <span class="stars-price-tag">⭐️ 50 / ամիս</span>
+            </div>
+            <div class="ghost-tier-row" id="tier-row-intl" style="margin-top:8px;">
+              <span>🌍 Այլ երկրների համարներ (ոչ +374)</span>
+              <span class="stars-price-tag">⭐️ 500 / ամիս</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="section-label">ՁԵՐ ՀԵՌԱԽՈՍԱՀԱՄԱՐԸ (ՍԱԿԱԳԻՆԸ ՈՐՈՇԵԼՈՒ ՀԱՄԱՐ)</label>
+            <div style="display:flex; gap:8px;">
+              <input
+                type="tel"
+                id="ghost-phone-input"
+                class="settings-input"
+                placeholder="+374 XX XXX XXX կամ այլ կոդ..."
+                style="flex:1;"
+              />
+              <button class="btn-profile-secondary" id="verify-tg-contact-btn" type="button" title="Հաստատել Telegram-ի միջոցով">
+                📱 Telegram-ով
+              </button>
+            </div>
+            <div id="ghost-phone-detected-info" style="font-size:12px; color:var(--text-medium); margin-top:4px;">
+              Մուտքագրեք կամ հաստատեք Ձեր հեռախոսահամարը (+374 կոդի դեպքում՝ 50 ⭐️, այլապես՝ 500 ⭐️)
+            </div>
+          </div>
+
+          <div class="profile-modal-actions">
+            <button class="btn-chat-primary" id="pay-ghost-stars-btn" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color:#1e293b; font-weight:800;">
+              ⭐️ Վճարել 500 Telegram Stars (@QipsBot)
+            </button>
+            <div id="ghost-payment-status-msg" style="font-size:12px; text-align:center; color:var(--text-color); display:none;"></div>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Mutual Qips Match Celebration Modal -->
+      <dialog id="qips-match-dialog" class="custom-dialog">
+        <div class="modal-content" id="qips-match-dialog-body">
+          <!-- Populated dynamically on mutual match -->
+        </div>
+      </dialog>
+
+      <!-- First-Use Telegram Contacts Auto-Import Confirmation Modal -->
+      <dialog id="first-contacts-confirm-dialog" class="custom-dialog">
+        <div class="modal-content">
+          <div class="modal-header" style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:26px;">📱</span>
+            <h3 class="modal-title" style="margin:0;">Տելեգրամյան Կոնտակտներ</h3>
+          </div>
+
+          <div class="profile-section-card" style="text-align:left;">
+            <div class="section-label">ԱՎՏՈՄԱՏ ՀԱՄԱԺԱՄԵՑՈՒՄ</div>
+            <div style="font-size:13.5px; color:var(--text-dark); line-height:1.55;">
+              Թույլատրե՞լ <strong>Քիփս (Qips)</strong> հավելվածին ավտոմատ ավելացնել Ձեր տելեգրամյան կոնտակտները՝ իրենց իրական անուններով և նկարներով։
+            </div>
+            <div style="font-size:12px; color:var(--text-color); margin-top:8px; line-height:1.45;">
+              🔒 Կարող եք ցանկացած կոնտակտի ուղարկել անանուն հրավեր @QipsBot-ի կողմից։
+            </div>
+          </div>
+
+          <div class="profile-modal-actions">
+            <button class="btn-chat-primary" id="confirm-auto-contacts-btn">
+              ✅ Հաստատել և Ավելացնել Կոնտակտները
+            </button>
+            <button class="btn-profile-secondary" id="decline-auto-contacts-btn">
+              Հետո
+            </button>
           </div>
         </div>
       </dialog>

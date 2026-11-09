@@ -38,11 +38,19 @@ export class RealtimePeerService {
     this.onPeersUpdate = onPeersUpdate;
     this.onLocationChange = onLocationChange;
     this.chatCallbacks = new Set();
+    this.qipsMatchCallbacks = new Set();
 
     this.livePeers = new Map(); // peerId -> peer
+    this.allQipsUsers = new Map(); // peerId -> peer (all known Qips app users)
     this.currentCoords = null;
     this.heartbeatTimer = null;
     this.pruneTimer = null;
+
+    // Secret "Become Qips" (Դարձիր Քիփս) state:
+    // Outgoing intents I have clicked, and incoming silent intents from others (kept 100% hidden until mutual!)
+    this.myOutgoingQips = new Set(this.loadSavedArray('qips_my_outgoing_v1'));
+    this.silentIncomingQips = new Map(); // key -> senderInfo
+    this.confirmedQipsMatches = new Set(this.loadSavedArray('qips_confirmed_matches_v1'));
 
     // WiFi Network State
     this.myWifiId = null;
@@ -51,6 +59,8 @@ export class RealtimePeerService {
 
     // Real-Time Network Channels
     this.presenceTopic = 'tma_nearby/v3/wifi_presence';
+    this.registryPrefix = 'tma_nearby/v3/qips_user_reg/';
+    this.qipsIntentTopic = 'tma_nearby/v3/qips_secret_intent';
     this.chatPrefix = 'tma_nearby/v3/chat/';
 
     // Stable Peer ID
@@ -60,16 +70,53 @@ export class RealtimePeerService {
     this.broadcastChannel = null;
   }
 
+  loadSavedArray(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  saveSet(key, setObj) {
+    try {
+      localStorage.setItem(key, JSON.stringify(Array.from(setObj)));
+    } catch {}
+  }
+
   generatePeerId() {
     const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
     if (tgId) return `tg_${tgId}`;
 
-    let saved = localStorage.getItem('tma_wifi_peer_id');
-    if (!saved) {
-      saved = 'peer_' + Math.random().toString(36).substring(2, 10);
-      localStorage.setItem('tma_wifi_peer_id', saved);
+    // Use sessionStorage first so multiple preview windows can test live peer-to-peer interaction
+    let sessionPeer = sessionStorage.getItem('tma_wifi_session_peer_id');
+    if (!sessionPeer) {
+      sessionPeer = 'peer_' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('tma_wifi_session_peer_id', sessionPeer);
     }
-    return saved;
+    return sessionPeer;
+  }
+
+  // Canonical matching keys for a user (matches by id or @username)
+  getPeerKeys(peerOrProfile) {
+    const keys = new Set();
+    if (!peerOrProfile) return [];
+    if (peerOrProfile.id) keys.add(`id:${peerOrProfile.id}`);
+    if (peerOrProfile.telegramId) keys.add(`tg:${peerOrProfile.telegramId}`);
+    const uname = (peerOrProfile.username || '').replace(/^@/, '').trim().toLowerCase();
+    if (uname && uname !== 'user' && uname !== 'user_nearby') {
+      keys.add(`u:${uname}`);
+    }
+    return Array.from(keys);
+  }
+
+  getMyKeys() {
+    return this.getPeerKeys({
+      id: this.myPeerId,
+      telegramId: this.myProfile.telegramId,
+      username: this.myProfile.username
+    });
   }
 
   // 1. WiFi Network Auto-Detection (Zero GPS required)
@@ -158,6 +205,7 @@ export class RealtimePeerService {
     // Regular heartbeat every 3 seconds
     this.heartbeatTimer = setInterval(() => {
       this.broadcastPresence();
+      this.reannounceOutgoingQipsIntents();
     }, 3000);
 
     // Prune stale peers inactive for > 10 seconds
@@ -178,6 +226,8 @@ export class RealtimePeerService {
             this.handleIncomingPeer(data.peer);
           } else if (data.type === 'chat_message' && data.toId === this.myPeerId) {
             this.handleIncomingChatMessage(data);
+          } else if (data.type === 'qips_secret_intent' || data.type === 'qips_mutual_confirm') {
+            this.handleIncomingQipsSignal(data);
           }
         };
       }
@@ -206,12 +256,18 @@ export class RealtimePeerService {
         this.mqttClient.on('connect', () => {
           // Subscribe to global presence
           this.mqttClient.subscribe(this.presenceTopic, { qos: 0 });
+          // Subscribe to retained real Qips user registry
+          this.mqttClient.subscribe(`${this.registryPrefix}+`, { qos: 1 });
+          // Subscribe to secret Qips intent channel
+          this.mqttClient.subscribe(this.qipsIntentTopic, { qos: 1 });
 
           // Subscribe to my direct incoming chat channel
           const myChatTopic = `${this.chatPrefix}${this.myPeerId}`;
           this.mqttClient.subscribe(myChatTopic, { qos: 1 });
 
           this.broadcastPresence();
+          this.publishMyUserRegistry();
+          this.reannounceOutgoingQipsIntents();
         });
 
         this.mqttClient.on('message', (topic, payload) => {
@@ -219,6 +275,10 @@ export class RealtimePeerService {
             const data = JSON.parse(payload.toString());
             if (topic === this.presenceTopic && data.peer) {
               this.handleIncomingPeer(data.peer);
+            } else if (topic.startsWith(this.registryPrefix) && data.peer) {
+              this.handleRegisteredQipsUser(data.peer);
+            } else if (topic === this.qipsIntentTopic) {
+              this.handleIncomingQipsSignal(data);
             } else if (topic.startsWith(this.chatPrefix)) {
               this.handleIncomingChatMessage(data);
             }
@@ -238,6 +298,42 @@ export class RealtimePeerService {
     tryConnect();
   }
 
+  broadcastMyPresence() {
+    this.publishMyUserRegistry();
+    return this.broadcastPresence();
+  }
+
+  publishMyUserRegistry() {
+    if (!this.mqttClient || !this.mqttClient.connected) return;
+    if (this.myProfile.ghost || this.myProfile.visible === false) return;
+
+    const peerData = {
+      id: this.myPeerId,
+      name: this.myProfile.name || 'Telegram User',
+      username: this.myProfile.username || '',
+      avatarUrl: this.myProfile.avatarUrl || null,
+      bio: this.myProfile.status || 'Քիփս օգտատեր',
+      telegramId: this.myProfile.telegramId || null,
+      city: this.myWifiCity,
+      timestamp: Date.now(),
+      online: true
+    };
+
+    this.mqttClient.publish(
+      `${this.registryPrefix}${this.myPeerId}`,
+      JSON.stringify({ type: 'qips_user', peer: peerData }),
+      { qos: 1, retain: true }
+    );
+  }
+
+  handleRegisteredQipsUser(peer) {
+    if (!peer || !peer.id || peer.id === this.myPeerId) return;
+    if (!this.allQipsUsers.has(peer.id)) {
+      this.allQipsUsers.set(peer.id, peer);
+      this.notifyPeersUpdate();
+    }
+  }
+
   // 3. Broadcast My Presence (Via WiFi Network)
   broadcastPresence() {
     if (!this.currentCoords) return;
@@ -248,6 +344,9 @@ export class RealtimePeerService {
       username: this.myProfile.username || 'user',
       avatarUrl: this.myProfile.avatarUrl || null,
       bio: this.myProfile.status || 'Առցանց WiFi-ում',
+      telegramId: this.myProfile.telegramId || null,
+      ghost: Boolean(this.myProfile.ghost),
+      visible: this.myProfile.visible !== false,
       wifiId: this.myWifiId,
       wifiIp: this.myPublicIp,
       city: this.myWifiCity,
@@ -282,14 +381,11 @@ export class RealtimePeerService {
     peer.isSameWifi = isSameWifi;
 
     if (isSameWifi) {
-      // Micro-distance calculation for users in the exact same room / cafe / WiFi
-      // Stable micro distance: 0.8m to 12.0m based on peer hash
       const hash = Math.abs(hashString(peer.id));
       const microDist = Math.round(((hash % 112) / 10 + 0.8) * 10) / 10;
       peer.distanceMeters = microDist;
       peer.bearing = (hash * 7) % 360;
 
-      // Small jitter around current WiFi coordinates so peer displays nicely on the map
       const offsetLat = ((hash % 100) - 50) * 0.000008;
       const offsetLng = (((hash * 13) % 100) - 50) * 0.000008;
       peer.lat = this.currentCoords.lat + offsetLat;
@@ -313,8 +409,157 @@ export class RealtimePeerService {
     }
 
     peer.lastSeenAt = Date.now();
+
+    // Always register in Qips Users Directory (unless explicitly invisible)
+    this.allQipsUsers.set(peer.id, peer);
+
+    // If peer has Ghost Mode enabled or visible=false, hide them from the Radar/Map proximity list!
+    if (peer.ghost || peer.visible === false) {
+      if (this.livePeers.has(peer.id)) {
+        this.livePeers.delete(peer.id);
+      }
+      this.notifyPeersUpdate();
+      return;
+    }
+
     this.livePeers.set(peer.id, peer);
     this.notifyPeersUpdate();
+  }
+
+  // =========================================================================
+  // Secret "Become Qips" («Դարձիր Քիփս») Mutual Matching Protocol
+  // =========================================================================
+  hasSentQipsTo(peer) {
+    const keys = this.getPeerKeys(peer);
+    return keys.some(k => this.myOutgoingQips.has(k));
+  }
+
+  isMutualQipsWith(peer) {
+    const keys = this.getPeerKeys(peer);
+    return keys.some(k => this.confirmedQipsMatches.has(k));
+  }
+
+  // Called when user clicks «Դարձիր Քիփս» next to a Qips user
+  expressQipsDesire(targetPeer) {
+    if (!targetPeer) return { matched: false };
+
+    const targetKeys = this.getPeerKeys(targetPeer);
+    targetKeys.forEach(k => this.myOutgoingQips.add(k));
+    this.saveSet('qips_my_outgoing_v1', this.myOutgoingQips);
+
+    // Publish silent intent (receiver's client keeps this 100% secret unless they ALSO clicked for us)
+    this.publishQipsSignal('qips_secret_intent', targetPeer);
+
+    // Check if targetPeer had ALREADY secretly clicked «Դարձիր Քիփս» for us!
+    const alreadyIncoming = targetKeys.some(k => this.silentIncomingQips.has(k));
+    if (alreadyIncoming) {
+      this.confirmMutualMatch(targetPeer);
+      this.publishQipsSignal('qips_mutual_confirm', targetPeer);
+      return { matched: true };
+    }
+
+    return { matched: false };
+  }
+
+  reannounceOutgoingQipsIntents() {
+    if (this.myOutgoingQips.size === 0) return;
+    const payload = {
+      type: 'qips_secret_intent',
+      fromPeer: {
+        id: this.myPeerId,
+        name: this.myProfile.name || 'Telegram User',
+        username: this.myProfile.username || 'user',
+        telegramId: this.myProfile.telegramId || null,
+        avatarUrl: this.myProfile.avatarUrl || null
+      },
+      fromKeys: this.getMyKeys(),
+      targetKeys: Array.from(this.myOutgoingQips),
+      timestamp: Date.now()
+    };
+
+    if (this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage(payload);
+      } catch (e) {}
+    }
+    if (this.mqttClient && this.mqttClient.connected) {
+      this.mqttClient.publish(this.qipsIntentTopic, JSON.stringify(payload), { qos: 0 });
+    }
+  }
+
+  publishQipsSignal(signalType, targetPeer) {
+    const payload = {
+      type: signalType,
+      fromPeer: {
+        id: this.myPeerId,
+        name: this.myProfile.name || 'Telegram User',
+        username: this.myProfile.username || 'user',
+        telegramId: this.myProfile.telegramId || null,
+        avatarUrl: this.myProfile.avatarUrl || null
+      },
+      fromKeys: this.getMyKeys(),
+      targetKeys: this.getPeerKeys(targetPeer),
+      timestamp: Date.now()
+    };
+
+    if (this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage(payload);
+      } catch (e) {}
+    }
+
+    if (this.mqttClient && this.mqttClient.connected) {
+      this.mqttClient.publish(this.qipsIntentTopic, JSON.stringify(payload), { qos: 1 });
+    }
+  }
+
+  handleIncomingQipsSignal(data) {
+    if (!data || !data.fromPeer || data.fromPeer.id === this.myPeerId) return;
+
+    const myKeys = this.getMyKeys();
+    const isTargetingMe = (data.targetKeys || []).some(tk => myKeys.includes(tk));
+    if (!isTargetingMe) return;
+
+    const senderKeys = data.fromKeys || this.getPeerKeys(data.fromPeer);
+
+    // Store silently in memory (NEVER shown to user unless user also selected this sender!)
+    senderKeys.forEach(sk => {
+      this.silentIncomingQips.set(sk, data.fromPeer);
+    });
+
+    // Check if I have ALSO selected this sender!
+    const iAlsoSelectedSender = senderKeys.some(sk => this.myOutgoingQips.has(sk));
+
+    if (iAlsoSelectedSender) {
+      const wasAlreadyMatched = senderKeys.some(sk => this.confirmedQipsMatches.has(sk));
+      if (!wasAlreadyMatched) {
+        this.confirmMutualMatch(data.fromPeer);
+        if (data.type === 'qips_secret_intent') {
+          // Notify the other side that mutual match is now complete
+          this.publishQipsSignal('qips_mutual_confirm', data.fromPeer);
+        }
+      }
+    }
+  }
+
+  confirmMutualMatch(partnerPeer) {
+    const partnerKeys = this.getPeerKeys(partnerPeer);
+    partnerKeys.forEach(k => this.confirmedQipsMatches.add(k));
+    this.saveSet('qips_confirmed_matches_v1', this.confirmedQipsMatches);
+
+    this.qipsMatchCallbacks.forEach(cb => {
+      try {
+        cb(partnerPeer);
+      } catch (e) {
+        console.error('Error in Qips match callback:', e);
+      }
+    });
+  }
+
+  onQipsMutualMatch(callback) {
+    if (typeof callback === 'function') {
+      this.qipsMatchCallbacks.add(callback);
+    }
   }
 
   // 4. Send & Receive Real Chat Messages
@@ -380,6 +625,10 @@ export class RealtimePeerService {
       const list = Array.from(this.livePeers.values());
       this.onPeersUpdate(list);
     }
+  }
+
+  getAllKnownQipsUsers() {
+    return Array.from(this.allQipsUsers.values());
   }
 
   refreshWifi() {

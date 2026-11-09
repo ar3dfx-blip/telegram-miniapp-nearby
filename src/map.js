@@ -177,12 +177,13 @@ export class MapEngine {
 
       const dStr = formatDistance(person.distanceMeters, this.lang || 'hy');
 
+      const fallbackSvg = person.fallbackAvatarUrl || '';
       const markerEl = document.createElement('div');
       markerEl.className = `tg-peer-map-marker ${person.online ? 'is-online' : ''}`;
       markerEl.dataset.id = person.id;
       markerEl.innerHTML = `
         <div class="tg-peer-avatar-wrap">
-          <img src="${person.avatarUrl}" alt="${person.name}" class="tg-peer-avatar-img" />
+          <img src="${person.avatarUrl}" ${fallbackSvg ? `onerror="this.onerror=null;this.src='${fallbackSvg}';"` : ''} alt="${person.name}" class="tg-peer-avatar-img" />
           <span class="tg-peer-status-dot ${person.online ? 'is-online' : ''}"></span>
         </div>
         <div class="tg-peer-bubble-tag">${dStr}</div>
