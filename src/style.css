@@ -1450,6 +1450,37 @@ html, body {
   transform: translateY(1px);
 }
 
+.btn-tg-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: linear-gradient(135deg, #2aabee, #229ed9) !important;
+  border: none;
+  border-radius: 14px;
+  color: #ffffff !important;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(34, 158, 217, 0.4), var(--neu-flat-sm) !important;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-tg-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(34, 158, 217, 0.55) !important;
+}
+
+.btn-tg-primary:active {
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(1px);
+}
+
 .btn-profile-secondary {
   display: flex;
   align-items: center;

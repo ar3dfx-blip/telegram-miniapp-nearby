@@ -210,7 +210,7 @@ export class MapEngine {
       }).setHTML(`
         <div class="tg-map-tooltip">
           <div class="tg-tt-name">${person.name}</div>
-          <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? (this.lang === 'en' ? '🟢 Online' : '🟢 Առցանց') : (person.lastSeen || '')}</div>
+          <div class="tg-tt-sub">${dStr} • ${person.online ? (this.lang === 'en' ? 'Online' : 'Առցանց') : (person.lastSeen || '')}</div>
         </div>
       `);
 

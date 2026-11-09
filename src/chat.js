@@ -157,9 +157,9 @@ export class ChatEngine {
               <span class="chat-online-dot ${p.online ? 'is-online' : ''}"></span>
             </div>
             <div class="chat-header-info">
-              <div class="chat-header-name">${p.name} ${p.statusEmoji || ''}</div>
+              <div class="chat-header-name">${p.name}</div>
               <div class="chat-header-status">
-                <span class="chat-dist-tag">📍 ${distStr}</span> • ${statusStr}
+                <span class="chat-dist-tag">${distStr}</span> • ${statusStr}
               </div>
             </div>
           </div>
@@ -243,11 +243,15 @@ export class ChatEngine {
     if (list.length === 0) {
       container.innerHTML = `
         <div class="chat-empty-state">
-          <div class="empty-icon">💬</div>
+          <div class="empty-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <h4>${t.emptyChatTitle}</h4>
           <p>${this.lang === 'en'
-            ? `Send the first message to <strong>${this.activePerson.name}</strong> or pick a quick greeting below 👇`
-            : `Ուղարկեք առաջին նամակը <strong>${this.activePerson.name}</strong>-ին կամ ընտրեք պատրաստի արտահայտություն 👇`}</p>
+            ? `Send the first message to <strong>${this.activePerson.name}</strong> or pick a quick greeting below`
+            : `Ուղարկեք առաջին նամակը <strong>${this.activePerson.name}</strong>-ին կամ ընտրեք պատրաստի արտահայտություն`}</p>
         </div>
       `;
       return;

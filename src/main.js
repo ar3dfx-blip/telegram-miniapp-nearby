@@ -822,7 +822,7 @@ class AppController {
         lat: pLat,
         lng: pLng,
         lastSeen: p.lastSeen || 'Հենց հիմա (Live)',
-        statusEmoji: '📍',
+        statusEmoji: '',
         telegramId: p.telegramId || p.tg_id || null,
         phone: p.phone || null
       };
@@ -941,7 +941,10 @@ class AppController {
     const searchBannerHtml = isSearching ? `
       <div class="search-active-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; margin-bottom: 14px; background: var(--bg-secondary); box-shadow: var(--neu-flat-sm); border-radius: 16px; font-size: 13px; color: var(--text-dark);">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span>🔍</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
           <span>${t.searchingActive || 'Որոնում՝'} <strong>«${this.searchQuery}»</strong> (${t.anyDistance || 'անկախ հեռավորությունից'})</span>
         </div>
         <span style="font-weight:700; background: linear-gradient(135deg, #ff5e5e, #ff8a80); padding:3px 10px; border-radius:12px; font-size:12px; color:#ffffff; box-shadow: 0 2px 6px rgba(255,94,94,0.35);">${this.filteredPeople.length} ${t.peopleFound || 'մարդ'}</span>
@@ -977,8 +980,8 @@ class AppController {
             </div>
             <div class="person-info-col">
               <div class="person-name-row">
-                <span class="person-full-name">${person.name} ${person.statusEmoji || ''}</span>
-                <span class="distance-pill-badge">${person.isSameWifi ? '📶 WiFi ' : '⚡ '}${distStr}</span>
+                <span class="person-full-name">${person.name}</span>
+                <span class="distance-pill-badge">${person.isSameWifi ? 'WiFi • ' : ''}${distStr}</span>
               </div>
               <div class="person-username">${person.username ? '@' + person.username + ' • ' : ''}${person.isSameWifi ? '<span style="color:#059669; font-weight:600;">Նույն WiFi</span>' : (person.online ? t.statusOnline : person.lastSeen)}</div>
             </div>
@@ -1802,10 +1805,10 @@ class AppController {
 
       <div class="profile-hero">
         <img src="${photoSrc}" onerror="this.onerror=null;this.src='${fallbackSvg}';" alt="${person.name}" class="profile-hero-avatar" />
-        <div class="profile-hero-name">${person.name} ${person.statusEmoji || ''}</div>
+        <div class="profile-hero-name">${person.name}</div>
         <div class="profile-hero-username">${person.username ? '@' + person.username : ''}</div>
         <div class="distance-pill-badge" style="margin-top:2px;">
-          📍 ${distStr} ${t.away} • ${person.online ? '🟢 ' + t.statusOnline : (person.lastSeen || '')}
+          ${distStr} ${t.away} • ${person.online ? t.statusOnline : (person.lastSeen || '')}
         </div>
       </div>
 
@@ -1838,16 +1841,12 @@ class AppController {
         </button>
 
         ${person.username ? `
-        <a href="https://t.me/${person.username}" target="_blank" class="btn-profile-secondary" style="text-decoration:none;" id="modal-tg-direct-link">
+        <a href="https://t.me/${person.username}" target="_blank" class="btn-chat-primary btn-tg-primary" style="text-decoration:none;" id="modal-tg-direct-link">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
           </svg>
-          ${t.openInTelegram} (@${person.username})
+          ${this.currentLang === 'en' ? 'Open in Telegram' : 'Բացել Telegram-ում'}
         </a>` : ''}
-
-        <button class="btn-profile-secondary" id="modal-say-hi-btn">
-          ${t.sayHi}
-        </button>
       </div>
     `;
 
@@ -1883,15 +1882,6 @@ class AppController {
         }
       });
     }
-
-    this.profileDialogBody.querySelector('#modal-say-hi-btn').addEventListener('click', () => {
-      soundManager.playSent();
-      confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      const btn = this.profileDialogBody.querySelector('#modal-say-hi-btn');
-      btn.textContent = t.contactSent;
-      btn.style.borderColor = '#00e676';
-      btn.style.color = '#00e676';
-    });
   }
 
   formatRadarRange(meters, lang = 'hy') {
@@ -2382,8 +2372,8 @@ class AppController {
         <div class="tg-drawer-person-card" data-id="${p.id}">
           <img src="${p.avatarUrl}" onerror="this.onerror=null;this.src='${fallbackSvg}';" class="tg-drawer-card-avatar" alt="${p.name}" />
           <div>
-            <div class="tg-drawer-card-name">${p.name.split(' ')[0]} ${p.statusEmoji || ''}</div>
-            <div class="tg-drawer-card-dist">📍 ${dStr}</div>
+            <div class="tg-drawer-card-name">${p.name.split(' ')[0]}</div>
+            <div class="tg-drawer-card-dist">${dStr}</div>
           </div>
         </div>
       `;
@@ -2407,8 +2397,8 @@ class AppController {
     const shareUrl = QIPS_BOT_URL;
     const t = translations[this.currentLang];
     const text = this.currentLang === 'hy'
-      ? "Միացեք ինձ «Քիփս» (@QipsBot) հավելվածում՝ մոտակա կապ հաստատելու համար 📶"
-      : "Join me on Qips (@QipsBot) Telegram Mini App 📶";
+      ? "Միացեք ինձ «Քիփս» (@QipsBot) հավելվածում՝ մոտակա կապ հաստատելու համար"
+      : "Join me on Qips (@QipsBot) Telegram Mini App";
     const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
 
     const tg = window.Telegram?.WebApp;
