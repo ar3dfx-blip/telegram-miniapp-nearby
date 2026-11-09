@@ -26,14 +26,10 @@ export function createAvatarSvg(name, bgGrad = ['#945eff', '#af87ff'], emoji = "
         <stop offset="0%" stop-color="${grad1}" />
         <stop offset="100%" stop-color="${grad2}" />
       </linearGradient>
-      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
-      </filter>
     </defs>
-    <circle cx="50" cy="50" r="48" fill="url(#grad-${initials})" filter="url(#glow)"/>
-    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-    <text x="50" y="44" font-family="-apple-system, system-ui, BlinkMacSystemFont, sans-serif" font-size="28" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
-    <text x="50" y="74" font-family="-apple-system, system-ui, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">${initials}</text>
+    <rect width="100" height="100" fill="url(#grad-${initials})"/>
+    <text x="50" y="44" font-family="-apple-system, system-ui, BlinkMacSystemFont, sans-serif" font-size="30" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+    <text x="50" y="74" font-family="-apple-system, system-ui, BlinkMacSystemFont, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">${initials}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

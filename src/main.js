@@ -60,7 +60,7 @@ class AppController {
     // Telegram User state
     this.myProfile = {
       name: "Telegram User",
-      status: "Առցանց Քիփսում ✨",
+      status: this.currentLang === 'en' ? "Online on Qips ✨" : "Առցանց Քիփսում ✨",
       username: "",
       avatarUrl: null,
       telegramId: null,
@@ -537,7 +537,7 @@ class AppController {
 
   // 2. DOM Elements Cache
   initElements() {
-    this.radarCanvas = document.getElementById('radar-canvas');
+    this.radarCanvas = null;
     this.radarSlider = document.getElementById('radar-radius-slider');
     this.radarRangeDisplay = document.getElementById('radar-range-display');
     this.radarOnlineCount = document.getElementById('radar-count-online');
@@ -547,7 +547,6 @@ class AppController {
     this.mainNavTabs = document.getElementById('main-nav-tabs');
     this.viewPanels = {
       radar: document.getElementById('radar-view'),
-      map: document.getElementById('map-view'),
       profile: document.getElementById('profile-view'),
       chat: document.getElementById('chat-view')
     };
@@ -584,13 +583,15 @@ class AppController {
     this.updateGhostBadgeUI();
   }
 
-  // 3. Initialize Radar, Map & Chat engines
+  // 3. Initialize Map & Chat engines
   initEngines() {
-    this.radarEngine = new RadarEngine(this.radarCanvas, (person) => {
+    this.mapEngine = new MapEngine('leaflet-map', (person) => {
       this.openProfileModal(person);
     });
-    this.radarEngine.setPeople(this.people, this.currentRadius);
-    this.radarEngine.start();
+    this.mapEngine.init(this.currentCoords, this.currentRadius);
+    this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
+    this.mapEngine.setPeople(this.people, this.currentRadius);
+    this.mapEngine.setLanguage(this.currentLang);
 
     this.chatEngine = new ChatEngine(this.viewPanels.chat, () => {
       this.switchTab(this.previousTab || 'radar');
@@ -680,7 +681,7 @@ class AppController {
       lng,
       accuracy: accuracy || 10,
       isRealGps: true,
-      city: 'Իմ Դիրքը (GPS Live)',
+      city: this.currentLang === 'en' ? 'My Location (GPS Live)' : 'Իմ Դիրքը (GPS Live)',
       wifiId: this.currentCoords?.wifiId || null,
       wifiIp: this.currentCoords?.wifiIp || null,
       timestamp: Date.now()
@@ -713,7 +714,7 @@ class AppController {
           name: this.myProfile.name || 'Telegram User',
           phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
           avatarUrl: this.myProfile.avatarUrl || '',
-          bio: this.myProfile.status || 'Քիփս օգտատեր',
+          bio: this.myProfile.status || (this.currentLang === 'en' ? 'Qips User' : 'Քիփս օգտատեր'),
           coords: this.currentCoords,
           lat,
           lng,
@@ -906,7 +907,7 @@ class AppController {
     }
     if (this.radarTotalCount) {
       if (q) {
-        this.radarTotalCount.textContent = `${this.filteredPeople.length} գտնված`;
+        this.radarTotalCount.textContent = `${this.filteredPeople.length} ${t.peopleFound || (this.currentLang === 'en' ? 'found' : 'գտնված')}`;
       } else {
         this.radarTotalCount.textContent = `${withinRadius.length} ${t.peopleFound}`;
       }
@@ -924,9 +925,9 @@ class AppController {
         this.cardsContainer.innerHTML = `
           <div class="empty-search-card" style="text-align:center; padding: 36px 18px; color: var(--text-color); background: var(--bg-secondary); border-radius: 20px; box-shadow: var(--neu-flat-card); margin-top: 10px;">
             <div style="font-size: 38px; margin-bottom: 12px;">🔍</div>
-            <h3 style="color: var(--text-dark); font-size:16px; font-weight:700; margin-bottom:6px;">«${this.searchQuery}» անունով օգտատեր չգտնվեց</h3>
+            <h3 style="color: var(--text-dark); font-size:16px; font-weight:700; margin-bottom:6px;">${t.noUsersFoundTitle ? t.noUsersFoundTitle(this.searchQuery) : `«${this.searchQuery}»`}</h3>
             <p style="font-size:13px; line-height:1.5; color: var(--text-color); margin-bottom: 0;">
-              Փորձեք մուտքագրել անվան այլ տարբերակ (հայերեն կամ լատինատառ) կամ Telegram @username:
+              ${t.noUsersFoundDesc || ''}
             </p>
           </div>
         `;
@@ -941,9 +942,9 @@ class AppController {
       <div class="search-active-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; margin-bottom: 14px; background: var(--bg-secondary); box-shadow: var(--neu-flat-sm); border-radius: 16px; font-size: 13px; color: var(--text-dark);">
         <div style="display:flex; align-items:center; gap:8px;">
           <span>🔍</span>
-          <span>Որոնում՝ <strong>«${this.searchQuery}»</strong> (անկախ հեռավորությունից)</span>
+          <span>${t.searchingActive || 'Որոնում՝'} <strong>«${this.searchQuery}»</strong> (${t.anyDistance || 'անկախ հեռավորությունից'})</span>
         </div>
-        <span style="font-weight:700; background: linear-gradient(135deg, #ff5e5e, #ff8a80); padding:3px 10px; border-radius:12px; font-size:12px; color:#ffffff; box-shadow: 0 2px 6px rgba(255,94,94,0.35);">${this.filteredPeople.length} մարդ</span>
+        <span style="font-weight:700; background: linear-gradient(135deg, #ff5e5e, #ff8a80); padding:3px 10px; border-radius:12px; font-size:12px; color:#ffffff; box-shadow: 0 2px 6px rgba(255,94,94,0.35);">${this.filteredPeople.length} ${t.peopleFound || 'մարդ'}</span>
       </div>
     ` : '';
 
@@ -1231,11 +1232,12 @@ class AppController {
     if (!this.qipsUsersListEl) return;
 
     const allUsers = this.getAllCurrentQipsUsers().filter(u => !this.isSelfUser(u));
+    const t = translations[this.currentLang] || translations.hy;
 
     if (allUsers.length === 0) {
       this.qipsUsersListEl.innerHTML = `
         <div style="text-align:center; padding:22px 16px; color:var(--text-color); font-size:13px; background:var(--bg-primary); border-radius:16px; box-shadow:var(--neu-inset-sm);">
-          Այս պահին Ձեզանից բացի առցանց այլ Qips օգտատերեր չկան։ Հրավիրեք Ձեր կոնտակտներին ներքևի ցուցակից։
+          ${t.noOtherUsersNearby || 'Այս պահին Ձեզանից բացի առցանց այլ Qips օգտատերեր չկան։'}
         </div>
       `;
       return;
@@ -1251,19 +1253,19 @@ class AppController {
       if (isMutual) {
         btnHtml = `
           <button class="btn-become-qips is-mutual-matched qips-action-btn" data-id="${user.id}">
-            ${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS Connected' : 'ՔԻՓՍ ենք (Շփվել)'}
+            ${OUTLINE_HEART_SVG} ${t.qipsConnectedChat || (this.currentLang === 'en' ? 'QIPS Connected' : 'ՔԻՓՍ ենք (Շփվել)')}
           </button>
         `;
       } else if (isPending) {
         btnHtml = `
           <button class="btn-become-qips is-secret-pending qips-action-btn" data-id="${user.id}" title="${this.currentLang === 'en' ? 'Pending mutual confirmation' : 'Սպասում է դիմացինի հաստատմանը'}">
-            ${this.currentLang === 'en' ? 'Pending' : 'Սպասում է'}
+            ${t.qipsPending || (this.currentLang === 'en' ? 'Pending' : 'Սպասում է')}
           </button>
         `;
       } else {
         btnHtml = `
           <button class="btn-become-qips qips-action-btn" data-id="${user.id}">
-            ${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ'}
+            ${OUTLINE_HEART_SVG} ${t.qipsBtnAction || (this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ')}
           </button>
         `;
       }
@@ -1277,7 +1279,7 @@ class AppController {
             </div>
             <div class="qips-user-meta">
               <div class="qips-user-name">${user.name}</div>
-              <div class="qips-user-handle">${user.username ? '@' + user.username + ' • ' : ''}${user.bio || 'Քիփս օգտատեր'}</div>
+              <div class="qips-user-handle">${user.username ? '@' + user.username + ' • ' : ''}${user.bio || t.defaultUserTitle || 'Քիփս օգտատեր'}</div>
             </div>
           </div>
           ${btnHtml}
@@ -1387,10 +1389,11 @@ class AppController {
     const tgDirectGreetingUrl = `https://t.me/${cleanUsername}?text=${encodeURIComponent(QIPS_MUTUAL_GREETING)}`;
     const fallbackSvg = createAvatarSvg(partnerPeer.name, ['#945eff', '#af87ff'], '👤');
     const avatar = getRealTelegramAvatarUrl({ avatarUrl: partnerPeer.avatarUrl, username: cleanUsername }) || fallbackSvg;
+    const t = translations[this.currentLang] || translations.hy;
 
     this.qipsMatchDialogBody.innerHTML = `
       <div class="modal-header">
-        <h3 class="modal-title">${OUTLINE_HEART_SVG} Համընկնում՝ Դուք Քիփս եք!</h3>
+        <h3 class="modal-title">${OUTLINE_HEART_SVG} ${t.matchModalTitle || 'Համընկնում՝ Դուք Քիփս եք!'}</h3>
         <button class="modal-close-btn" id="close-qips-match-btn">✕</button>
       </div>
 
@@ -1401,7 +1404,7 @@ class AppController {
       </div>
 
       <div class="profile-section-card" style="background: linear-gradient(135deg, rgba(148,94,255,0.08), rgba(255,94,94,0.08)); border: 1.5px solid rgba(148,94,255,0.3);">
-        <div class="section-label" style="color: var(--accent-primary);">ՈՂՋՈՒՅՆԻ ՀԱՂՈՐԴԱԳՐՈՒԹՅՈՒՆ</div>
+        <div class="section-label" style="color: var(--accent-primary);">${t.greetingMsgLabel || 'ՈՂՋՈՒՅՆԻ ՀԱՂՈՐԴԱԳՐՈՒԹՅՈՒՆ'}</div>
         <div style="font-size:14px; font-weight:600; color:var(--text-dark); line-height:1.55; margin-top:4px;">
           «${QIPS_MUTUAL_GREETING}»
         </div>
@@ -1409,10 +1412,10 @@ class AppController {
 
       <div class="profile-modal-actions">
         <a href="${tgDirectGreetingUrl}" target="_blank" class="btn-chat-primary" id="open-tg-match-greeting-btn" style="text-decoration:none;">
-          ✈️ Բացել Telegram-ում և սկսել շփվել (@${cleanUsername})
+          ${t.openTgMatchGreeting || '✈️ Բացել Telegram-ում և սկսել շփվել'} (@${cleanUsername})
         </a>
         <button class="btn-profile-secondary" id="open-inapp-match-chat-btn">
-          💬 Բացել ներքին չատում
+          ${t.openInAppMatchChat || '💬 Բացել ներքին չատում'}
         </button>
       </div>
     `;
@@ -1603,23 +1606,25 @@ class AppController {
   updateGhostModalPricePreview() {
     const payBtn = document.getElementById('pay-ghost-stars-btn');
     if (payBtn) {
-      payBtn.textContent = 'Վճարել 500 Telegram Stars';
+      const t = translations[this.currentLang] || translations.hy;
+      payBtn.textContent = t.payGhostStars || 'Վճարել 500 Telegram Stars';
     }
   }
 
   async handlePayGhostStars() {
+    const t = translations[this.currentLang] || translations.hy;
     const statusEl = document.getElementById('ghost-payment-status-msg');
     const payBtn = document.getElementById('pay-ghost-stars-btn');
     const starsAmount = 500;
 
     if (payBtn) {
       payBtn.disabled = true;
-      payBtn.textContent = '⏳ Ստեղծվում է 500 Stars հաշիվ @QipsBot-ում...';
+      payBtn.textContent = t.creatingInvoice || '⏳ Ստեղծվում է 500 Stars հաշիվ @QipsBot-ում...';
     }
     if (statusEl) {
       statusEl.style.display = 'block';
       statusEl.style.color = 'var(--text-medium)';
-      statusEl.textContent = 'Միանում ենք Telegram Stars վճարային համակարգին (@QipsBot)...';
+      statusEl.textContent = t.connectingStars || 'Միանում ենք Telegram Stars վճարային համակարգին (@QipsBot)...';
     }
 
     // 1. Try Vercel Serverless Backend to create Stars invoice
@@ -1658,7 +1663,7 @@ class AppController {
     if (!invoiceRes || !invoiceRes.ok || !invoiceRes.invoiceUrl) {
       if (statusEl) {
         statusEl.style.color = '#dc2626';
-        statusEl.textContent = `Սխալ՝ ${invoiceRes?.error || 'Չհաջողվեց ստեղծել հաշիվը'}`;
+        statusEl.textContent = `${this.currentLang === 'en' ? 'Error: ' : 'Սխալ՝ '}${invoiceRes?.error || t.invoiceError || 'Չհաջողվեց ստեղծել հաշիվը'}`;
       }
       return;
     }
@@ -1669,7 +1674,7 @@ class AppController {
     if (tg && tg.initData && typeof tg.openInvoice === 'function') {
       if (statusEl) {
         statusEl.style.color = 'var(--text-medium)';
-        statusEl.textContent = 'Բացվում է Telegram Stars (500 ⭐️) պատուհանը...';
+        statusEl.textContent = t.openingStarsModal || 'Բացվում է Telegram Stars (500 ⭐️) պատուհանը...';
       }
       tg.openInvoice(invoiceUrl, (status) => {
         if (status === 'paid') {
@@ -1689,12 +1694,12 @@ class AppController {
         } else if (status === 'cancelled') {
           if (statusEl) {
             statusEl.style.color = '#d97706';
-            statusEl.textContent = 'Վճարումը չեղարկվեց։ Ghost Mode-ը միացնելու համար անհրաժեշտ է վճարել Telegram Stars-ով։';
+            statusEl.textContent = t.paymentCancelled || 'Վճարումը չեղարկվեց։ Ghost Mode-ը միացնելու համար անհրաժեշտ է վճարել Telegram Stars-ով։';
           }
         } else {
           if (statusEl) {
             statusEl.style.color = '#dc2626';
-            statusEl.textContent = `Վճարման կարգավիճակ՝ ${status}`;
+            statusEl.textContent = `${t.paymentStatusPrefix || 'Վճարման կարգավիճակ՝'} ${status}`;
           }
         }
       });
@@ -1704,7 +1709,7 @@ class AppController {
     window.open(invoiceUrl, '_blank');
     if (statusEl) {
       statusEl.style.color = '#059669';
-      statusEl.innerHTML = `
+      statusEl.innerHTML = t.realStarsInvoiceOpened ? t.realStarsInvoiceOpened(starsAmount, invoiceUrl) : `
         Իրական <strong>${starsAmount} ⭐️</strong> Telegram Stars հաշիվը բացվեց նոր պատուհանում (<a href="${invoiceUrl}" target="_blank" style="color:var(--accent-primary); font-weight:700;">Բացել Telegram-ում</a>)։
       `;
     }
@@ -1712,7 +1717,11 @@ class AppController {
 
   // 6. View Tabs Switching
   switchTab(tabName) {
+    if (tabName === 'map') tabName = 'radar';
     if (this.activeTab === tabName) {
+      if (tabName === 'radar' && this.mapEngine) {
+        this.mapEngine.recenter();
+      }
       if (tabName === 'radar' || tabName === 'profile') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -1753,6 +1762,9 @@ class AppController {
     if (tabName === 'radar') {
       this.syncWithVercelCloudBackend();
       this.renderQipsDirectoryAndContacts();
+      if (this.mapEngine) {
+        this.mapEngine.invalidateSize();
+      }
     }
 
     if (tabName === 'profile') {
@@ -1761,27 +1773,6 @@ class AppController {
 
     if (this.mainNavTabs) {
       this.mainNavTabs.style.display = tabName === 'chat' ? 'none' : 'flex';
-    }
-
-    if (tabName === 'map') {
-      if (!this.mapEngine) {
-        this.mapEngine = new MapEngine('leaflet-map', (person) => {
-          this.openProfileModal(person);
-        });
-        this.mapEngine.init(this.currentCoords, this.currentRadius);
-        this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
-        this.mapEngine.setPeople(this.people, this.currentRadius);
-      } else {
-        this.mapEngine.invalidateSize();
-        this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
-        this.mapEngine.setPeople(this.people, this.currentRadius);
-        this.mapEngine.recenter();
-      }
-      this.renderMapDrawer();
-    } else if (tabName === 'radar') {
-      if (this.radarEngine) {
-        this.radarEngine.resize();
-      }
     }
   }
 
@@ -1819,12 +1810,12 @@ class AppController {
       </div>
 
       <div class="profile-section-card">
-        <div class="section-label">${t.profileAbout}</div>
-        <div style="font-size:14px; color:var(--text-dark); line-height:1.5;">${person.bio || 'Քիփս օգտատեր'}</div>
+        <div class="section-label">${t.interests || 'ՀԵՏԱՔՐՔՐՈՒԹՅՈՒՆՆԵՐ'}</div>
+        <div style="font-size:14px; color:var(--text-dark); line-height:1.5;">${person.bio || t.defaultUserTitle || 'Քիփս օգտատեր'}</div>
       </div>
 
       <div class="profile-section-card">
-        <div class="section-label">${t.profileInterests}</div>
+        <div class="section-label">${t.interests || 'ՀԵՏԱՔՐՔՐՈՒԹՅՈՒՆՆԵՐ'}</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
           ${interests.map(i => `<span class="tag-badge">#${i}</span>`).join('')}
         </div>
@@ -1833,17 +1824,17 @@ class AppController {
       <div class="profile-modal-actions">
         <button class="btn-become-qips ${isMutual ? 'is-mutual-matched' : (isPending ? 'is-secret-pending' : '')}" id="modal-become-qips-btn" style="width:100%; justify-content:center; padding:12px;">
           ${isMutual
-            ? `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS Connected (Chat)' : 'ՔԻՓՍ ենք (Շփվել)'}`
+            ? `${OUTLINE_HEART_SVG} ${t.qipsConnectedChat || 'ՔԻՓՍ ենք (Շփվել)'}`
             : (isPending
-              ? (this.currentLang === 'en' ? 'Pending' : 'Հայտն ուղարկված է')
-              : `${OUTLINE_HEART_SVG} ${this.currentLang === 'en' ? 'QIPS' : 'ՔԻՓՍ'}`)}
+              ? (t.qipsRequestSent || 'Հայտն ուղարկված է')
+              : `${OUTLINE_HEART_SVG} ${t.qipsBtnAction || 'ՔԻՓՍ'}`)}
         </button>
 
         <button class="btn-chat-primary" id="modal-chat-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
-          ${t.writeMessage} (Հավելվածում)
+          ${t.writeMessageInApp || t.writeMessage || 'Նամակ գրել (Հավելվածում)'}
         </button>
 
         ${person.username ? `
@@ -2222,7 +2213,7 @@ class AppController {
         }
         this.syncProfilePageView();
         const origText = saveSettingsBtn.textContent;
-        saveSettingsBtn.textContent = '✓ Պահպանված է';
+        saveSettingsBtn.textContent = this.currentLang === 'en' ? '✓ Saved' : '✓ Պահպանված է';
         setTimeout(() => { saveSettingsBtn.textContent = origText; }, 1800);
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
       });
@@ -2262,7 +2253,7 @@ class AppController {
 
   // 11. Apply Translations
   applyTranslations() {
-    const t = translations[this.currentLang];
+    const t = translations[this.currentLang] || translations.hy;
     const flagMap = { hy: '🇦🇲', en: '🇬🇧' };
 
     const langCodeEl = document.getElementById('current-lang-code');
@@ -2271,26 +2262,34 @@ class AppController {
     const langTextEl = document.getElementById('current-lang-text');
     if (langTextEl) langTextEl.textContent = this.currentLang === 'en' ? 'English' : 'Հայերեն';
 
-    document.getElementById('t-app-title').textContent = t.appTitle;
+    const appTitleEl = document.getElementById('t-app-title');
+    if (appTitleEl) appTitleEl.textContent = t.appTitle;
     document.title = `${t.appTitle} | @QipsBot`;
+
     const subEl = document.getElementById('t-app-subtitle');
     if (subEl) subEl.textContent = t.appSubtitle;
-    document.getElementById('t-tab-radar').textContent = t.tabRadar;
-    document.getElementById('t-tab-map').textContent = t.tabMap;
+
+    const tabRadarEl = document.getElementById('t-tab-radar');
+    if (tabRadarEl) tabRadarEl.textContent = this.currentLang === 'en' ? 'Map' : 'Քարտեզ';
+    const tabMapEl = document.getElementById('t-tab-map');
+    if (tabMapEl) tabMapEl.textContent = t.tabMap;
     const tabProfileEl = document.getElementById('t-tab-profile');
-    if (tabProfileEl) tabProfileEl.textContent = t.tabProfile || 'Պրոֆիլ';
+    if (tabProfileEl) tabProfileEl.textContent = t.tabProfile || (this.currentLang === 'en' ? 'Profile' : 'Պրոֆիլ');
     const tabListEl = document.getElementById('t-tab-list');
     if (tabListEl) tabListEl.textContent = t.tabList;
     const radiusLabel = document.getElementById('t-radius-label');
     if (radiusLabel) radiusLabel.textContent = `${t.radius}՝`;
 
-    document.getElementById('pill-all').textContent = t.filterAll;
-    document.getElementById('pill-online').textContent = t.filterOnline;
+    const pillAllEl = document.getElementById('pill-all');
+    if (pillAllEl) pillAllEl.textContent = t.filterAll;
+    const pillOnlineEl = document.getElementById('pill-online');
+    if (pillOnlineEl) pillOnlineEl.textContent = t.filterOnline;
     const pillCloseEl = document.getElementById('pill-close');
     if (pillCloseEl) pillCloseEl.textContent = t.filterClose;
     const pillFemaleEl = document.getElementById('pill-female');
     if (pillFemaleEl) pillFemaleEl.textContent = t.filterFemale;
-    document.getElementById('pill-male').textContent = t.filterMale;
+    const pillMaleEl = document.getElementById('pill-male');
+    if (pillMaleEl) pillMaleEl.textContent = t.filterMale;
 
     if (this.searchInput) {
       this.searchInput.placeholder = t.searchPlaceholder;
@@ -2306,8 +2305,23 @@ class AppController {
     if (stealthTitleEl) stealthTitleEl.textContent = t.stealthMode;
     const stealthDescEl = document.getElementById('t-stealth-desc');
     if (stealthDescEl) stealthDescEl.textContent = t.stealthDesc;
+    const realTitleEl = document.getElementById('t-real-title');
+    if (realTitleEl) realTitleEl.textContent = t.allTgUsers;
+    const realDescEl = document.getElementById('t-real-desc');
+    if (realDescEl) realDescEl.textContent = t.allTgUsersDesc;
+    const myNameLabelEl = document.getElementById('t-my-name-label');
+    if (myNameLabelEl) myNameLabelEl.textContent = t.myNameLabel;
+    const myStatusLabelEl = document.getElementById('t-my-status-label');
+    if (myStatusLabelEl) myStatusLabelEl.textContent = t.myStatusLabel;
     const saveBtnEl = document.getElementById('save-settings-btn');
-    if (saveBtnEl) saveBtnEl.textContent = t.saveProfile;
+    if (saveBtnEl) saveBtnEl.textContent = t.saveSettings || t.saveProfile;
+
+    const settingsHeaderEl = document.getElementById('t-settings-header');
+    if (settingsHeaderEl) settingsHeaderEl.textContent = t.settingsHeader;
+    const ghostModalTitleEl = document.getElementById('t-ghost-modal-title');
+    if (ghostModalTitleEl) ghostModalTitleEl.textContent = t.ghostModalTitle;
+    const payGhostStarsBtn = document.getElementById('pay-ghost-stars-btn');
+    if (payGhostStarsBtn) payGhostStarsBtn.textContent = t.payGhostStars;
 
     if (this.radarEngine) {
       this.radarEngine.setLanguage(this.currentLang);

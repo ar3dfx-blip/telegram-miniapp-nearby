@@ -375,38 +375,62 @@ html, body {
   box-sizing: border-box;
 }
 
-/* 3D Neumorphic Circular Dial Knob - Always 100% Round Circle */
+/* 3D Neumorphic Square Map Card Container with Rounded Corners */
 .radar-canvas-card {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   /* Use CSS min() so width and height are strictly identical on all screen aspect ratios */
-  width: min(86vw, 360px, calc(100dvh - 300px));
-  height: min(86vw, 360px, calc(100dvh - 300px));
-  min-width: 200px;
-  min-height: 200px;
+  width: min(90vw, 380px, calc(100dvh - 280px));
+  height: min(90vw, 380px, calc(100dvh - 280px));
+  min-width: 220px;
+  min-height: 220px;
   aspect-ratio: 1 / 1 !important;
   flex: 0 0 auto !important; /* Prevents vertical squashing into an oval */
   margin: 0 auto;
   background: var(--bg-primary);
-  border-radius: 50% !important;
-  padding: 12px;
+  border-radius: 26px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   box-sizing: border-box;
   box-shadow: 
-    14px 14px 28px var(--shadow-outer),
-    -14px -14px 28px var(--shadow-inner),
-    inset 3px 3px 6px var(--shadow-outer),
-    inset -3px -3px 6px var(--shadow-inner);
+    10px 10px 24px var(--shadow-outer),
+    -10px -10px 24px var(--shadow-inner);
   border: 3px solid rgba(255, 255, 255, 0.85);
 }
 
-canvas#radar-canvas {
+#leaflet-map {
   width: 100% !important;
   height: 100% !important;
-  aspect-ratio: 1 / 1 !important;
-  border-radius: 50% !important;
-  display: block;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.radar-canvas-card .tg-recenter-btn {
+  position: absolute !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  z-index: 10 !important;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--neu-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-canvas-card .tg-recenter-btn:active {
+  box-shadow: var(--neu-inset-sm);
+  transform: scale(0.95);
 }
 
 /* Radar Controls Card (Slider & Stats) */
@@ -1017,23 +1041,28 @@ canvas#radar-canvas {
 }
 
 .tg-beacon-core {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 2px solid var(--accent-primary);
-  box-shadow: 0 4px 14px rgba(148, 94, 255, 0.4), var(--neu-flat-sm);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(148, 94, 255, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
   overflow: hidden;
+  position: relative;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--bg-secondary);
 }
 
 .tg-beacon-logo {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .tg-peer-div-icon {
@@ -1054,14 +1083,23 @@ canvas#radar-canvas {
   transform: scale(1.15) translateY(-4px);
 }
 
+.tg-peer-avatar-container {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
 .tg-peer-avatar-wrap {
-  width: 42px;
-  height: 42px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   border: 3px solid #ffffff;
   box-shadow: 4px 4px 12px var(--shadow-outer), -3px -3px 8px var(--shadow-inner);
   position: relative;
   background: var(--bg-secondary);
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1075,21 +1113,25 @@ canvas#radar-canvas {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
 }
 
 .tg-peer-status-dot {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
+  bottom: 0px;
+  right: 0px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #94a3b8;
-  border: 1.5px solid #ffffff;
+  border: 2px solid #ffffff;
+  z-index: 4;
+  box-sizing: border-box;
 }
 
 .tg-peer-status-dot.is-online {
   background: #00e676;
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.9);
 }
 
 .tg-peer-bubble-tag {

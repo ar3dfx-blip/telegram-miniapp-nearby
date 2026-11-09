@@ -1,5 +1,7 @@
 // In-App Messaging System with Local Storage & Realistic Bot Personas
 import { soundManager } from './audio.js';
+import { translations } from './translations.js';
+import { formatDistance } from './mockData.js';
 import confetti from 'canvas-confetti';
 
 export class ChatEngine {
@@ -10,6 +12,14 @@ export class ChatEngine {
     this.messages = this.loadHistory();
     this.ws = null;
     this.typingTimeout = null;
+    this.lang = 'hy';
+  }
+
+  setLanguage(lang) {
+    this.lang = lang || 'hy';
+    if (this.activePerson) {
+      this.render();
+    }
   }
 
   loadHistory() {
@@ -123,11 +133,20 @@ export class ChatEngine {
     const p = this.activePerson;
     if (!p) return;
 
+    const t = translations[this.lang] || translations.hy;
+    const distStr = formatDistance(p.distanceMeters || 10, this.lang);
+    const statusStr = p.online ? t.statusOnline : (p.lastSeen || '');
+    const firstName = p.name.split(' ')[0];
+
+    const quickChipsHtml = (t.quickGreetings || []).map(msg => `
+      <button class="quick-chip" data-msg="${this.escapeHtml(msg)}">${this.escapeHtml(msg)}</button>
+    `).join('');
+
     this.container.innerHTML = `
       <div class="chat-view-wrapper">
         <!-- Chat Header -->
         <div class="chat-header">
-          <button class="chat-back-btn" id="chat-back-button" title="Վերադառնալ">
+          <button class="chat-back-btn" id="chat-back-button" title="${t.back}">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
@@ -140,11 +159,11 @@ export class ChatEngine {
             <div class="chat-header-info">
               <div class="chat-header-name">${p.name} ${p.statusEmoji || ''}</div>
               <div class="chat-header-status">
-                <span class="chat-dist-tag">📍 ${p.distanceMeters} մետր</span> • ${p.online ? 'Առցանց' : p.lastSeen}
+                <span class="chat-dist-tag">📍 ${distStr}</span> • ${statusStr}
               </div>
             </div>
           </div>
-          <a href="https://t.me/${p.username}" target="_blank" class="chat-tg-btn" title="Բացել Telegram-ում">
+          <a href="https://t.me/${p.username}" target="_blank" class="chat-tg-btn" title="${t.openInTelegram}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
             </svg>
@@ -161,15 +180,12 @@ export class ChatEngine {
           <div class="typing-bubble">
             <span></span><span></span><span></span>
           </div>
-          <span class="typing-text">${p.name.split(' ')[0]}-ը գրում է...</span>
+          <span class="typing-text">${firstName}${t.typingSuffix}</span>
         </div>
 
         <!-- Quick Icebreaker Chips -->
         <div class="chat-quick-replies">
-          <button class="quick-chip" data-msg="👋 Ողջույն, մոտակայքում ես?">👋 Ողջույն, մոտակայքում ես?</button>
-          <button class="quick-chip" data-msg="☕ Սուրճի՞ կգնանք միասին">☕ Սուրճի՞ կգնանք</button>
-          <button class="quick-chip" data-msg="Հաճելի է ծանոթանալ!">Հաճելի է ծանոթանալ</button>
-          <button class="quick-chip" data-msg="📍 Որտե՞ղ ես հենց հիմա">📍 Որտե՞ղ ես հիմա</button>
+          ${quickChipsHtml}
         </div>
 
         <!-- Chat Input Form -->
@@ -178,10 +194,10 @@ export class ChatEngine {
             type="text"
             id="chat-input-field"
             class="chat-text-input"
-            placeholder="Գրեք նամակ ${p.name.split(' ')[0]}-ին..."
+            placeholder="${this.lang === 'en' ? `Message ${firstName}...` : `Գրեք նամակ ${firstName}-ին...`}"
             autocomplete="off"
           />
-          <button type="submit" class="chat-send-btn" id="chat-submit-btn" aria-label="Ուղարկել">
+          <button type="submit" class="chat-send-btn" id="chat-submit-btn" aria-label="${t.send}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
             </svg>
@@ -221,14 +237,17 @@ export class ChatEngine {
     const container = this.container.querySelector('#chat-messages-container');
     if (!container || !this.activePerson) return;
 
+    const t = translations[this.lang] || translations.hy;
     const list = this.messages[this.activePerson.id] || [];
 
     if (list.length === 0) {
       container.innerHTML = `
         <div class="chat-empty-state">
           <div class="empty-icon">💬</div>
-          <h4>Դեռ նամակներ չկան</h4>
-          <p>Ուղարկեք առաջին նամակը <strong>${this.activePerson.name}</strong>-ին կամ ընտրեք պատրաստի արտահայտություն 👇</p>
+          <h4>${t.emptyChatTitle}</h4>
+          <p>${this.lang === 'en'
+            ? `Send the first message to <strong>${this.activePerson.name}</strong> or pick a quick greeting below 👇`
+            : `Ուղարկեք առաջին նամակը <strong>${this.activePerson.name}</strong>-ին կամ ընտրեք պատրաստի արտահայտություն 👇`}</p>
         </div>
       `;
       return;

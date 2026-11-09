@@ -189,8 +189,10 @@ export class MapEngine {
       markerEl.className = `tg-peer-map-marker ${person.online ? 'is-online' : ''}`;
       markerEl.dataset.id = person.id;
       markerEl.innerHTML = `
-        <div class="tg-peer-avatar-wrap">
-          <img src="${person.avatarUrl}" ${fallbackSvg ? `onerror="this.onerror=null;this.src='${fallbackSvg}';"` : ''} alt="${person.name}" class="tg-peer-avatar-img" />
+        <div class="tg-peer-avatar-container">
+          <div class="tg-peer-avatar-wrap">
+            <img src="${person.avatarUrl}" ${fallbackSvg ? `onerror="this.onerror=null;this.src='${fallbackSvg}';"` : ''} alt="${person.name}" class="tg-peer-avatar-img" />
+          </div>
           <span class="tg-peer-status-dot ${person.online ? 'is-online' : ''}"></span>
         </div>
         <div class="tg-peer-bubble-tag">${dStr}</div>
@@ -208,7 +210,7 @@ export class MapEngine {
       }).setHTML(`
         <div class="tg-map-tooltip">
           <div class="tg-tt-name">${person.name}</div>
-          <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? '🟢 Առցանց' : person.lastSeen}</div>
+          <div class="tg-tt-sub">📍 ${dStr} • ${person.online ? (this.lang === 'en' ? '🟢 Online' : '🟢 Առցանց') : (person.lastSeen || '')}</div>
         </div>
       `);
 
