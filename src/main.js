@@ -332,14 +332,40 @@ class AppController {
         tg.ready();
         tg.expand();
 
+        // 1. Enter Fullscreen Mode (Bot API 8.0+) and calculate safe top offset so Telegram Close/Menu buttons never overlap header
+        const updateSafeAreaVars = () => {
+          const safeTop = tg.safeAreaInset?.top || 0;
+          const contentSafeTop = tg.contentSafeAreaInset?.top || 0;
+          const totalTop = safeTop + contentSafeTop;
+          const isMobileTg = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && Boolean(tg.initData || tg.platform === 'android' || tg.platform === 'ios');
+
+          if (totalTop > 0) {
+            document.documentElement.style.setProperty('--app-safe-top', `${Math.max(totalTop + 10, isMobileTg ? 88 : 16)}px`);
+          } else if (tg.isFullscreen || isMobileTg) {
+            document.documentElement.style.setProperty('--app-safe-top', '90px');
+          } else {
+            document.documentElement.style.setProperty('--app-safe-top', '16px');
+          }
+        };
+
         const tryFullscreen = () => {
           if (typeof tg.requestFullscreen === 'function' && !tg.isFullscreen) {
             try { tg.requestFullscreen(); } catch (e) {}
           }
+          updateSafeAreaVars();
         };
         tryFullscreen();
+        setTimeout(updateSafeAreaVars, 150);
+        setTimeout(updateSafeAreaVars, 500);
         window.addEventListener('click', tryFullscreen, { once: true });
         window.addEventListener('touchstart', tryFullscreen, { once: true });
+
+        if (typeof tg.onEvent === 'function') {
+          tg.onEvent('safeAreaChanged', updateSafeAreaVars);
+          tg.onEvent('contentSafeAreaChanged', updateSafeAreaVars);
+          tg.onEvent('fullscreenChanged', updateSafeAreaVars);
+          tg.onEvent('viewportChanged', updateSafeAreaVars);
+        }
 
         if (typeof tg.disableVerticalSwipes === 'function') {
           try { tg.disableVerticalSwipes(); } catch (e) {}

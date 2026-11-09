@@ -91,17 +91,39 @@ html, body {
   top: 0;
   z-index: 1000;
   background-color: var(--bg-primary);
-  padding: max(16px, calc(env(safe-area-inset-top, 0px) + 8px)) 20px 14px;
+  padding-top: max(
+    var(--app-safe-top, 16px),
+    calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 0px) + 12px)
+  );
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 14px;
   box-shadow: 0 4px 14px rgba(210, 213, 219, 0.45);
   border-bottom-left-radius: 25px;
   border-bottom-right-radius: 25px;
 }
 
 .header-top-row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 44px;
   gap: 12px;
+}
+
+.brand-title-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--text-dark);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .app-branding {
