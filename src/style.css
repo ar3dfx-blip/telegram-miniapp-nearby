@@ -2329,15 +2329,33 @@ input:checked + .slider-round:before {
   transition: all 0.2s ease;
 }
 
-.ghost-tier-row.active-tier {
-  border-color: #f59e0b;
-  background: #fffbeb;
-}
-
 .stars-price-tag {
   font-weight: 800;
-  color: #d97706;
+  color: var(--accent-primary);
   white-space: nowrap;
+}
+
+#pay-ghost-stars-btn {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: var(--neu-btn-purple) !important;
+  border: none;
+  border-radius: 16px;
+  padding: 13px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#pay-ghost-stars-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(148, 94, 255, 0.45) !important;
+}
+
+#pay-ghost-stars-btn:active {
+  transform: translateY(1px);
+  box-shadow: var(--neu-inset-sm) !important;
 }
 
 #header-ghost-btn {

@@ -130,6 +130,54 @@
             <div class="people-cards-list" id="people-cards-list">
               <!-- Dynamic cards rendered by JS -->
             </div>
+
+            <!-- TOP SECTION: Current Qips App Users List with "ՔԻՓՍ" button -->
+            <div class="qips-section-card" style="margin-top: 18px;">
+              <div class="qips-section-header">
+                <div class="qips-section-title-row">
+                  <span class="qips-section-icon qips-section-icon-heart" title="Քփեր">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </span>
+                  <div>
+                    <h2 class="qips-section-title" id="t-qips-users-title">Քփեր</h2>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Qips Current Users List -->
+              <div class="qips-users-list" id="qips-current-users-list">
+                <!-- Populated dynamically by JS -->
+              </div>
+            </div>
+
+            <!-- BOTTOM SECTION: Telegram Contacts List with Anonymous Invite via @QipsBot -->
+            <div class="qips-section-card" style="margin-top: 14px; margin-bottom: 24px;">
+              <div class="qips-section-header">
+                <div class="qips-section-title-row">
+                  <span class="qips-section-icon qips-section-icon-tg" title="Telegram">
+                    <svg width="42" height="42" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block;">
+                      <circle cx="12" cy="12" r="12" fill="#24A1DE"/>
+                      <path d="M16.64 8.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" fill="#ffffff"/>
+                    </svg>
+                  </span>
+                  <div>
+                    <h2 class="qips-section-title" id="t-tg-contacts-title">Կոնտակտներ</h2>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Native Telegram Picker Action Button (Dogs/Notcoin style) -->
+              <div style="margin: 8px 0 4px 0;">
+                <button class="btn-native-tg-picker" id="btn-native-tg-share-picker" title="Qpvel">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                  </svg>
+                  <span>Qpvel</span>
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -144,57 +192,6 @@
               <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
             </svg>
           </button>
-        </section>
-
-        <!-- 3. QIPS USERS & TELEGRAM CONTACTS PAGE -->
-        <section id="list-view" class="list-view-container" style="display:none;">
-          <!-- TOP SECTION: Current Qips App Users List with "ՔԻՓՍ" button -->
-          <div class="qips-section-card">
-            <div class="qips-section-header">
-              <div class="qips-section-title-row">
-                <span class="qips-section-icon qips-section-icon-heart" title="Քփեր">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </span>
-                <div>
-                  <h2 class="qips-section-title" id="t-qips-users-title">Քփեր</h2>
-                </div>
-              </div>
-            </div>
-
-            <!-- Qips Current Users List -->
-            <div class="qips-users-list" id="qips-current-users-list">
-              <!-- Populated dynamically by JS -->
-            </div>
-          </div>
-
-          <!-- BOTTOM SECTION: Telegram Contacts List with Anonymous Invite via @QipsBot -->
-          <div class="qips-section-card">
-            <div class="qips-section-header">
-              <div class="qips-section-title-row">
-                <span class="qips-section-icon qips-section-icon-tg" title="Telegram">
-                  <svg width="42" height="42" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block;">
-                    <circle cx="12" cy="12" r="12" fill="#24A1DE"/>
-                    <path d="M16.64 8.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" fill="#ffffff"/>
-                  </svg>
-                </span>
-                <div>
-                  <h2 class="qips-section-title" id="t-tg-contacts-title">Կոնտակտներ</h2>
-                </div>
-              </div>
-            </div>
-
-            <!-- Native Telegram Picker Action Button (Dogs/Notcoin style) -->
-            <div style="margin: 8px 0 4px 0;">
-              <button class="btn-native-tg-picker" id="btn-native-tg-share-picker" title="Qpvel">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                </svg>
-                <span>Qpvel</span>
-              </button>
-            </div>
-          </div>
         </section>
 
         <!-- 4. CHAT VIEW -->
@@ -301,12 +298,6 @@
           </svg>
           <span id="t-tab-map" style="display:none;">Քարտեզ</span>
         </button>
-        <button class="nav-tab-btn" data-tab="list" id="tab-qips-btn" title="Քփեր և Կոնտակտներ">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span id="t-tab-list" style="display:none;">Քիփս</span>
-        </button>
         <button class="nav-tab-btn" data-tab="profile" id="tab-profile-btn" title="Իմ պրոֆիլը և կարգավորումները">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -328,32 +319,24 @@
       </dialog>
 
 
-      <!-- Ghost Mode Telegram Stars Payment Modal (Auto-detected from Telegram Account) -->
+      <!-- Ghost Mode Telegram Stars Payment Modal -->
       <dialog id="ghost-payment-dialog" class="custom-dialog">
         <div class="modal-content">
-          <div class="modal-header" style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:26px;">👻</span>
-            <h3 class="modal-title" style="margin:0;">Ghost Mode • Telegram Stars</h3>
-            <button class="modal-close-btn" id="close-ghost-pay-btn" style="margin-left:auto;">✕</button>
+          <div class="modal-header" style="display:flex; justify-content:flex-end; padding-bottom:4px;">
+            <button class="modal-close-btn" id="close-ghost-pay-btn">✕</button>
           </div>
 
-          <div class="profile-section-card" style="text-align:left;">
+          <div class="profile-section-card" style="text-align:left; margin-top:2px;">
             <div class="section-label">GHOST MODE ԲԱԺԱՆՈՐԴԱԳՐՈՒԹՅՈՒՆ</div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:14px; background:var(--bg-primary); box-shadow:var(--neu-inset-sm);">
-              <div>
-                <div style="font-weight:700; color:var(--text-dark); font-size:14px;">30 Օր Անտեսանելի ռեժիմ</div>
-                <div style="font-size:12px; color:var(--text-medium); margin-top:2px;">Դիտել մոտակայքը անտեսանելի</div>
-              </div>
-              <span class="stars-price-tag" style="font-size:14px; font-weight:800; color:#f59e0b;">⭐️ 500 Stars</span>
-            </div>
-            <div id="ghost-phone-detected-info" style="font-size:12px; color:var(--text-medium); margin-top:10px; padding-top:8px; border-top:1px solid var(--track-color);">
-              Վճարումը կատարվում է Telegram Stars-ով (XTR)
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-radius:16px; background:var(--bg-primary); box-shadow:var(--neu-inset-sm);">
+              <span style="font-weight:700; color:var(--text-dark); font-size:14.5px;">30 Օր Անտեսանելի ռեժիմ</span>
+              <span class="stars-price-tag" style="font-size:14.5px; font-weight:800; color:var(--accent-primary);">500 Stars</span>
             </div>
           </div>
 
-          <div class="profile-modal-actions">
-            <button class="btn-chat-primary" id="pay-ghost-stars-btn" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color:#1e293b; font-weight:800; width:100%;">
-              ⭐️ Վճարել 500 Telegram Stars (30 Օր)
+          <div class="profile-modal-actions" style="margin-top:16px;">
+            <button class="btn-chat-primary" id="pay-ghost-stars-btn" style="width:100%;">
+              Վճարել 500 Telegram Stars
             </button>
             <div id="ghost-payment-status-msg" style="font-size:12px; text-align:center; color:var(--text-color); display:none; margin-top:8px;"></div>
           </div>

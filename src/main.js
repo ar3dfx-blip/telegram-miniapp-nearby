@@ -544,7 +544,6 @@ class AppController {
     this.viewPanels = {
       radar: document.getElementById('radar-view'),
       map: document.getElementById('map-view'),
-      list: document.getElementById('list-view'),
       profile: document.getElementById('profile-view'),
       chat: document.getElementById('chat-view')
     };
@@ -1439,7 +1438,7 @@ class AppController {
   updateGhostModalPricePreview() {
     const payBtn = document.getElementById('pay-ghost-stars-btn');
     if (payBtn) {
-      payBtn.textContent = '⭐️ Վճարել 500 Telegram Stars (30 Օր)';
+      payBtn.textContent = 'Վճարել 500 Telegram Stars';
     }
   }
 
@@ -1450,7 +1449,7 @@ class AppController {
 
     if (payBtn) {
       payBtn.disabled = true;
-      payBtn.textContent = '⏳ Ստեղծվում է 500 ⭐️ հաշիվ @QipsBot-ում...';
+      payBtn.textContent = '⏳ Ստեղծվում է 500 Stars հաշիվ @QipsBot-ում...';
     }
     if (statusEl) {
       statusEl.style.display = 'block';
@@ -1549,7 +1548,7 @@ class AppController {
   // 6. View Tabs Switching
   switchTab(tabName) {
     if (this.activeTab === tabName) {
-      if (tabName === 'radar' || tabName === 'list' || tabName === 'profile') {
+      if (tabName === 'radar' || tabName === 'profile') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
@@ -1582,17 +1581,17 @@ class AppController {
       }
     });
 
-    if (tabName === 'radar' || tabName === 'list' || tabName === 'profile') {
+    if (tabName === 'radar' || tabName === 'profile') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (tabName === 'radar') {
+      this.syncWithVercelCloudBackend();
+      this.renderQipsDirectoryAndContacts();
     }
 
     if (tabName === 'profile') {
       this.syncProfilePageView();
-    }
-
-    if (tabName === 'list') {
-      this.syncWithVercelCloudBackend();
-      this.renderQipsDirectoryAndContacts();
     }
 
     if (this.mainNavTabs) {
