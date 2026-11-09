@@ -14,7 +14,6 @@ import {
 } from './mockData.js';
 import { RadarEngine } from './radar.js';
 import { MapEngine } from './map.js';
-import { ChatEngine } from './chat.js';
 import { RealtimePeerService } from './realtime.js';
 import {
   QIPS_BOT_URL,
@@ -102,7 +101,6 @@ class AppController {
     // Engines & Realtime Service
     this.radarEngine = null;
     this.mapEngine = null;
-    this.chatEngine = null;
     this.realtimeService = null;
 
     this.initTelegramWebApp();
@@ -542,13 +540,6 @@ class AppController {
             if (!this.myProfile.username) this.myProfile.username = 'TigranBagavan';
           }
         } catch (e) {}
-
-        // Telegram BackButton event
-        tg.BackButton.onClick(() => {
-          if (this.activeTab === 'chat') {
-            this.switchTab(this.previousTab || 'radar');
-          }
-        });
       } catch (err) {
         console.warn("Telegram WebApp API error:", err);
       }
@@ -567,8 +558,7 @@ class AppController {
     this.mainNavTabs = document.getElementById('main-nav-tabs');
     this.viewPanels = {
       radar: document.getElementById('radar-view'),
-      profile: document.getElementById('profile-view'),
-      chat: document.getElementById('chat-view')
+      profile: document.getElementById('profile-view')
     };
 
     this.cardsContainer = document.getElementById('people-cards-list');
@@ -622,13 +612,6 @@ class AppController {
     this.mapEngine.setUserLocation(this.currentCoords, this.currentRadius, this.myProfile?.avatarUrl);
     this.mapEngine.setPeople(this.people, this.currentRadius);
     this.mapEngine.setLanguage(this.currentLang);
-
-    this.chatEngine = new ChatEngine(this.viewPanels.chat, () => {
-      this.switchTab(this.previousTab || 'radar');
-    });
-    if (this.realtimeService) {
-      this.chatEngine.setRealtimeService(this.realtimeService);
-    }
   }
 
   // Real-Time Peer & Live GPS Service Initialization
@@ -639,9 +622,6 @@ class AppController {
       (coords) => this.onRealLocationUpdated(coords)
     );
     this.realtimeService.connect();
-    if (this.chatEngine) {
-      this.chatEngine.setRealtimeService(this.realtimeService);
-    }
 
     // Listen for secret mutual «Դարձիր Քիփս» matches!
     this.realtimeService.onQipsMutualMatch((partnerPeer) => {
@@ -1027,13 +1007,7 @@ class AppController {
             <button class="btn-become-qips card-qips-btn ${qipsBtnClass}" data-id="${person.id}" style="flex:1; justify-content:center;">
               ${qipsBtnLabel}
             </button>
-            <button class="btn-chat-primary card-chat-btn" data-id="${person.id}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              ${t.writeMessage}
-            </button>
-            <button class="btn-profile-secondary card-view-btn" data-id="${person.id}">
+            <button class="btn-profile-secondary card-view-btn" data-id="${person.id}" style="flex:1; justify-content:center;">
               ${t.viewProfile}
             </button>
           </div>
@@ -1049,16 +1023,6 @@ class AppController {
         const id = btn.dataset.id;
         const person = this.filteredPeople.find(p => p.id === id) || this.people.find(p => p.id === id);
         if (person) this.onClickBecomeQips(person);
-      });
-    });
-
-    this.cardsContainer.querySelectorAll('.card-chat-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        soundManager.playTap();
-        const id = btn.dataset.id;
-        const person = this.filteredPeople.find(p => p.id === id) || this.people.find(p => p.id === id);
-        if (person) this.openChatWith(person);
       });
     });
 
@@ -1444,12 +1408,9 @@ class AppController {
       </div>
 
       <div class="profile-modal-actions">
-        <a href="${tgDirectGreetingUrl}" target="_blank" class="btn-chat-primary" id="open-tg-match-greeting-btn" style="text-decoration:none;">
-          ${t.openTgMatchGreeting || '✈️ Բացել Telegram-ում և սկսել շփվել'} (@${cleanUsername})
+        <a href="${tgDirectGreetingUrl}" target="_blank" class="btn-chat-primary" id="open-tg-match-greeting-btn" style="text-decoration:none; width:100%; justify-content:center;">
+          ${this.currentLang === 'en' ? 'Open in Telegram' : 'Բացել Telegram-ում'} (@${cleanUsername})
         </a>
-        <button class="btn-profile-secondary" id="open-inapp-match-chat-btn">
-          ${t.openInAppMatchChat || '💬 Բացել ներքին չատում'}
-        </button>
       </div>
     `;
 
@@ -1467,11 +1428,6 @@ class AppController {
       } else {
         window.open(tgDirectGreetingUrl, '_blank');
       }
-    });
-
-    this.qipsMatchDialogBody.querySelector('#open-inapp-match-chat-btn')?.addEventListener('click', () => {
-      this.qipsMatchDialog.close();
-      this.openChatWith(partnerPeer);
     });
   }
 
@@ -1763,19 +1719,11 @@ class AppController {
 
     soundManager.triggerHaptic('light');
 
-    if (this.activeTab !== 'chat') {
-      this.previousTab = this.activeTab;
-    }
-
     this.activeTab = tabName;
 
     const tg = window.Telegram?.WebApp;
     if (tg?.BackButton) {
-      if (tabName === 'chat') {
-        tg.BackButton.show();
-      } else {
-        tg.BackButton.hide();
-      }
+      tg.BackButton.hide();
     }
 
     this.tabButtons.forEach(btn => {
@@ -1803,20 +1751,9 @@ class AppController {
     if (tabName === 'profile') {
       this.syncProfilePageView();
     }
-
-    if (this.mainNavTabs) {
-      this.mainNavTabs.style.display = tabName === 'chat' ? 'none' : 'flex';
-    }
   }
 
-  // 7. In-App Chat Launcher
-  openChatWith(person) {
-    this.selectedPerson = person;
-    this.chatEngine.openChat(person);
-    this.switchTab('chat');
-  }
-
-  // 8. Profile Modal Display
+  // 7. Profile Modal Display
   openProfileModal(person) {
     this.selectedPerson = person;
     const t = translations[this.currentLang];
