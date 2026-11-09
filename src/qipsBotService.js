@@ -6,7 +6,7 @@ const _p2 = 'AAFF4nyDxRF0IxZdDxyqG6nUb9t6X4DBJeE';
 export const QIPS_BOT_TOKEN = `${_p1}:${_p2}`;
 export const QIPS_BOT_USERNAME = 'QipsBot';
 export const QIPS_BOT_URL = 'https://t.me/QipsBot';
-export const QIPS_WEBAPP_URL = 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/?v=57d39fb';
+export const QIPS_WEBAPP_URL = 'https://qips-miniapp.vercel.app';
 export const QIPS_MUTUAL_GREETING = 'Մենք երկուսս էլ ավելի Քիփ դառնալու ցանկությոն ունենք եթե դեմ չես սկսենք շփվել';
 
 const API_BASE = `https://api.telegram.org/bot${QIPS_BOT_TOKEN}`;

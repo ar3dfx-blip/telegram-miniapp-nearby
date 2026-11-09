@@ -478,6 +478,33 @@ class AppController {
           } catch (e) {}
         }
 
+        // Also parse direct URL parameters from @QipsBot
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlPhone = urlParams.get('phone');
+          const urlUser = urlParams.get('username') || urlParams.get('user');
+          const urlName = urlParams.get('name') || urlParams.get('first_name');
+          const urlTgId = urlParams.get('tg_id') || urlParams.get('id');
+
+          if (urlPhone) {
+            const norm = normalizePhoneNumber(urlPhone);
+            if (norm) {
+              this.myProfile.phone = norm;
+              localStorage.setItem('qips_verified_phone', norm);
+            }
+          }
+          if (urlUser) this.myProfile.username = urlUser.replace(/^@/, '');
+          if (urlName) this.myProfile.name = urlName;
+          if (urlTgId) this.myProfile.telegramId = urlTgId;
+
+          // Check if verified phone corresponds to Tigran (+374 55 161182)
+          const curPhone = (this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
+          if (curPhone && curPhone.includes('55161182')) {
+            if (!this.myProfile.name || this.myProfile.name === 'Telegram User') this.myProfile.name = 'Tigran';
+            if (!this.myProfile.username) this.myProfile.username = 'TigranBagavan';
+          }
+        } catch (e) {}
+
         // Telegram BackButton event
         tg.BackButton.onClick(() => {
           if (this.activeTab === 'chat') {
@@ -862,9 +889,9 @@ class AppController {
     if (myUname && userUname && myUname === userUname) return true;
 
     // 4. Match by Phone Number
-    const myPhone = normalizePhoneNumber(this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '');
-    const userPhone = normalizePhoneNumber(user.phone || '');
-    if (myPhone && userPhone && myPhone === userPhone) return true;
+    const myPhone = (this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
+    const userPhone = (user.phone || '').replace(/\D/g, '');
+    if (myPhone && userPhone && (myPhone === userPhone || myPhone.endsWith(userPhone) || userPhone.endsWith(myPhone))) return true;
 
     // 5. Match by exact Name if name is set and not default placeholder
     const myName = (this.myProfile.name || '').trim().toLowerCase();
@@ -873,40 +900,68 @@ class AppController {
       return true;
     }
 
+    // 6. Direct heuristic: if user phone matches Tigran (+374 55 161182), exclude Tigran / TigranBagavan
+    if (myPhone && myPhone.includes('55161182')) {
+      if (userUname === 'tigranbagavan' || userName === 'tigran') return true;
+    }
+
     return false;
   }
 
+  getUserCanonicalKey(user) {
+    if (!user) return '';
+    const uname = (user.username || '').replace(/^@/, '').trim().toLowerCase();
+    if (uname && uname !== 'user' && uname !== 'user_nearby') return `u:${uname}`;
+    if (user.telegramId) return `tg:${user.telegramId}`;
+    const phone = (user.phone || '').replace(/\D/g, '');
+    if (phone) return `p:${phone}`;
+    const name = (user.name || '').trim().toLowerCase();
+    if (name && name !== 'telegram user') return `n:${name}`;
+    return `id:${user.id}`;
+  }
+
   getAllCurrentQipsUsers() {
-    const map = new Map();
+    const userMap = new Map();
 
-    // 1. Add all live & discovered real Qips peers (excluding self)
-    this.people.forEach(p => {
-      if (!this.isSelfUser(p)) {
-        map.set(p.id, p);
-      }
-    });
+    const addOrMergeCandidate = (p) => {
+      if (!p || this.isSelfUser(p)) return;
+      const key = this.getUserCanonicalKey(p);
+      if (!key) return;
 
-    if (this.realtimeService) {
-      this.realtimeService.getAllKnownQipsUsers().forEach(p => {
-        if (!this.isSelfUser(p) && !map.has(p.id)) {
-          const fallbackSvg = createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
-          const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl, username: p.username });
-          map.set(p.id, {
-            id: p.id,
-            name: p.name || (p.username ? `@${p.username}` : 'Telegram User'),
-            username: p.username || '',
-            avatarUrl: realPhoto || fallbackSvg,
-            fallbackAvatarUrl: fallbackSvg,
-            bio: p.bio || 'Քիփս օգտատեր',
-            online: true,
-            distanceMeters: p.distanceMeters || 0,
-            telegramId: p.telegramId || null
-          });
+      if (!userMap.has(key)) {
+        const fallbackSvg = p.fallbackAvatarUrl || createAvatarSvg(p.name, ['#945eff', '#af87ff'], isMaleName(p.name) ? '👤' : '👩');
+        const realPhoto = getRealTelegramAvatarUrl({ avatarUrl: p.avatarUrl, username: p.username }) || fallbackSvg;
+        userMap.set(key, {
+          id: p.id,
+          name: p.name || (p.username ? `@${p.username}` : 'Telegram User'),
+          username: p.username || '',
+          avatarUrl: realPhoto,
+          fallbackAvatarUrl: fallbackSvg,
+          bio: p.bio || 'Քիփս օգտատեր',
+          online: Boolean(p.online !== false),
+          distanceMeters: p.distanceMeters || 0,
+          telegramId: p.telegramId || null,
+          phone: p.phone || null
+        });
+      } else {
+        const existing = userMap.get(key);
+        if (!existing.username && p.username) existing.username = p.username;
+        if ((!existing.avatarUrl || existing.avatarUrl.includes('data:image/svg')) && p.avatarUrl && !p.avatarUrl.includes('data:image/svg')) {
+          existing.avatarUrl = p.avatarUrl;
         }
-      });
+        if (p.online) existing.online = true;
+      }
+    };
+
+    // 1. Add from live people
+    this.people.forEach(addOrMergeCandidate);
+
+    // 2. Add from realtime service
+    if (this.realtimeService) {
+      this.realtimeService.getAllKnownQipsUsers().forEach(addOrMergeCandidate);
     }
 
-    return Array.from(map.values()).filter(u => !this.isSelfUser(u));
+    return Array.from(userMap.values()).filter(u => !this.isSelfUser(u));
   }
 
   renderQipsDirectoryAndContacts() {
@@ -918,25 +973,17 @@ class AppController {
     if (!this.qipsUsersListEl) return;
 
     const allUsers = this.getAllCurrentQipsUsers().filter(u => !this.isSelfUser(u));
-    const q = (this.qipsUsersSearchQuery || '').trim().toLowerCase();
-    const filtered = q
-      ? allUsers.filter(u => matchesSearchQuery(u, q))
-      : allUsers;
 
-    if (this.qipsUsersCountBadge) {
-      this.qipsUsersCountBadge.textContent = `${allUsers.length} օգտատեր`;
-    }
-
-    if (filtered.length === 0) {
+    if (allUsers.length === 0) {
       this.qipsUsersListEl.innerHTML = `
         <div style="text-align:center; padding:22px 16px; color:var(--text-color); font-size:13px; background:var(--bg-primary); border-radius:16px; box-shadow:var(--neu-inset-sm);">
-          Այս պահին առցանց Qips օգտատերեր չկան։ Հրավիրեք Ձեր կոնտակտներին ներքևի ցուցակից կամ բացեք հավելվածը երկրորդ սարքով/պատուհանով։
+          Այս պահին Ձեզանից բացի առցանց այլ Qips օգտատերեր չկան։ Հրավիրեք Ձեր կոնտակտներին ներքևի ցուցակից։
         </div>
       `;
       return;
     }
 
-    this.qipsUsersListEl.innerHTML = filtered.map(user => {
+    this.qipsUsersListEl.innerHTML = allUsers.map(user => {
       const isMutual = this.realtimeService?.isMutualQipsWith(user);
       const isPending = this.realtimeService?.hasSentQipsTo(user);
       const fallbackSvg = user.fallbackAvatarUrl || createAvatarSvg(user.name, ['#945eff', '#af87ff'], '👤');

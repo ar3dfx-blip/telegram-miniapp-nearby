@@ -32,25 +32,6 @@ function hashString(str) {
   return hash;
 }
 
-const SEED_QIPS_USERS = [
-  {
-    id: 'tg_yerazamoyn_xr',
-    name: 'YERAZAMOYN XR',
-    username: 'Yerazamoyn_xr',
-    bio: 'Առցանց Քիփսում ✨',
-    online: true,
-    avatarUrl: 'https://t.me/i/userpic/320/Yerazamoyn_xr.jpg'
-  },
-  {
-    id: 'tg_tigran_bagavan',
-    name: 'Tigran',
-    username: 'TigranBagavan',
-    bio: 'Առցանց Քիփսում ✨',
-    online: true,
-    avatarUrl: 'https://t.me/i/userpic/320/TigranBagavan.jpg'
-  }
-];
-
 export class RealtimePeerService {
   constructor(myProfile, onPeersUpdate, onLocationChange) {
     this.myProfile = myProfile || {};
@@ -60,8 +41,7 @@ export class RealtimePeerService {
     this.qipsMatchCallbacks = new Set();
 
     this.livePeers = new Map(); // peerId -> peer
-    this.allQipsUsers = new Map(); // peerId -> peer (all known Qips app users)
-    SEED_QIPS_USERS.forEach(u => this.allQipsUsers.set(u.id, u));
+    this.allQipsUsers = new Map(); // canonicalKey -> peer (all known Qips app users)
     this.currentCoords = null;
     this.heartbeatTimer = null;
     this.pruneTimer = null;
@@ -142,17 +122,31 @@ export class RealtimePeerService {
   isSelfPeer(peer) {
     if (!peer) return false;
     if (peer.id === this.myPeerId) return true;
-    if (this.myProfile?.telegramId && peer.telegramId && String(this.myProfile.telegramId) === String(peer.telegramId)) return true;
-    if (this.myProfile?.username && peer.username) {
-      const myU = this.myProfile.username.replace(/^@/, '').trim().toLowerCase();
-      const pU = peer.username.replace(/^@/, '').trim().toLowerCase();
-      if (myU && pU && myU === pU) return true;
+
+    // Telegram ID
+    const myTgId = this.myProfile?.telegramId || window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    if (myTgId && peer.telegramId && String(myTgId) === String(peer.telegramId)) return true;
+
+    // Telegram Username
+    const myU = (this.myProfile?.username || window.Telegram?.WebApp?.initDataUnsafe?.user?.username || '').replace(/^@/, '').trim().toLowerCase();
+    const pU = (peer.username || '').replace(/^@/, '').trim().toLowerCase();
+    if (myU && pU && myU === pU) return true;
+
+    // Phone
+    const myPhone = (this.myProfile?.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
+    const pPhone = (peer.phone || '').replace(/\D/g, '');
+    if (myPhone && pPhone && (myPhone === pPhone || myPhone.endsWith(pPhone) || pPhone.endsWith(myPhone))) return true;
+
+    // Name
+    const myN = (this.myProfile?.name || '').trim().toLowerCase();
+    const pN = (peer.name || '').trim().toLowerCase();
+    if (myN && pN && myN === pN && myN !== 'telegram user') return true;
+
+    // Tigran profile match heuristic
+    if (myPhone && myPhone.includes('55161182')) {
+      if (pU === 'tigranbagavan' || pN === 'tigran') return true;
     }
-    if (this.myProfile?.name && peer.name) {
-      const myN = this.myProfile.name.trim().toLowerCase();
-      const pN = peer.name.trim().toLowerCase();
-      if (myN && pN && myN === pN && myN !== 'telegram user') return true;
-    }
+
     return false;
   }
 
@@ -365,10 +359,10 @@ export class RealtimePeerService {
 
   handleRegisteredQipsUser(peer) {
     if (!peer || !peer.id || this.isSelfPeer(peer)) return;
-    if (!this.allQipsUsers.has(peer.id)) {
-      this.allQipsUsers.set(peer.id, peer);
-      this.notifyPeersUpdate();
-    }
+    const key = (peer.username || peer.telegramId || peer.phone || peer.name || peer.id).toLowerCase().replace(/^@/, '').trim();
+    if (!key) return;
+    this.allQipsUsers.set(key, peer);
+    this.notifyPeersUpdate();
   }
 
   // 3. Broadcast My Presence (Via WiFi Network)
@@ -382,6 +376,7 @@ export class RealtimePeerService {
       avatarUrl: this.myProfile.avatarUrl || null,
       bio: this.myProfile.status || 'Առցանց WiFi-ում',
       telegramId: this.myProfile.telegramId || null,
+      phone: this.myProfile.phone || null,
       ghost: Boolean(this.myProfile.ghost),
       visible: this.myProfile.visible !== false,
       wifiId: this.myWifiId,
@@ -447,8 +442,11 @@ export class RealtimePeerService {
 
     peer.lastSeenAt = Date.now();
 
-    // Always register in Qips Users Directory (unless explicitly invisible)
-    this.allQipsUsers.set(peer.id, peer);
+    // Always register in Qips Users Directory with canonical deduplication
+    const canonicalKey = (peer.username || peer.telegramId || peer.phone || peer.name || peer.id).toLowerCase().replace(/^@/, '').trim();
+    if (canonicalKey) {
+      this.allQipsUsers.set(canonicalKey, peer);
+    }
 
     // If peer has Ghost Mode enabled or visible=false, hide them from the Radar/Map proximity list!
     if (peer.ghost || peer.visible === false) {

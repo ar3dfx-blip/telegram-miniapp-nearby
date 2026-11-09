@@ -9,7 +9,7 @@ dotenv.config();
 const _b1 = '9102883915';
 const _b2 = 'AAFF4nyDxRF0IxZdDxyqG6nUb9t6X4DBJeE';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || `${_b1}:${_b2}`;
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://ar3dfx-blip.github.io/telegram-miniapp-nearby/?v=57d39fb';
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://qips-miniapp.vercel.app';
 const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 // Store known users by username -> chatId for anonymous invitations
@@ -138,6 +138,7 @@ async function startBot() {
             const userId = String(msg.from?.id || chatId);
 
             userProfiles.set(userId, {
+              id: userId,
               phone: normalizedPhone,
               firstName,
               username: msg.from?.username || '',
@@ -145,9 +146,14 @@ async function startBot() {
             });
             saveUserProfiles();
 
-            const userWebAppUrl = `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}phone=${encodeURIComponent(normalizedPhone)}`;
+            const userParams = new URLSearchParams();
+            userParams.set('phone', normalizedPhone);
+            if (msg.from?.username) userParams.set('username', msg.from.username);
+            if (firstName) userParams.set('name', firstName);
+            userParams.set('tg_id', userId);
+            const userWebAppUrl = `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}${userParams.toString()}`;
 
-            // Silently update the Menu Button for this user with their verified phone
+            // Silently update the Menu Button for this user with their verified phone & identity
             try {
               await telegramRequest('setChatMenuButton', {
                 chat_id: chatId,
@@ -185,9 +191,13 @@ async function startBot() {
           if (msg.text) {
             if (msg.text.startsWith('/start')) {
               const savedUser = userProfiles.get(String(chatId));
-              const userWebAppUrl = savedUser?.phone
-                ? `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}phone=${encodeURIComponent(savedUser.phone)}`
-                : WEBAPP_URL;
+              const userParams = new URLSearchParams();
+              if (savedUser?.phone) userParams.set('phone', savedUser.phone);
+              const uName = msg.from?.username || savedUser?.username;
+              if (uName) userParams.set('username', uName);
+              if (firstName) userParams.set('name', firstName);
+              userParams.set('tg_id', String(chatId));
+              const userWebAppUrl = `${WEBAPP_URL}${WEBAPP_URL.includes('?') ? '&' : '?'}${userParams.toString()}`;
 
               await telegramRequest('sendMessage', {
                 chat_id: chatId,
