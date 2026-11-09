@@ -30,6 +30,7 @@ export default async function handler(req, res) {
 
       const filtered = all.filter(u => {
         if (!u) return false;
+        if (u.ghost) return false; // Invisible to other users when Ghost Mode is on
         if (excludeId && (String(u.id) === excludeId || String(u.telegramId) === excludeId)) return false;
         if (excludeUser && (u.username || '').replace(/^@/, '').trim().toLowerCase() === excludeUser) return false;
         const uPhone = (u.phone || '').replace(/\D/g, '');

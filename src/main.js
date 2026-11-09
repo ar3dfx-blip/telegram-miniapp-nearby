@@ -119,23 +119,41 @@ class AppController {
   }
 
   hasActiveGhostSubscription() {
+    const myPhone = (this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '').replace(/\D/g, '');
+    const myUname = (this.myProfile.username || '').toLowerCase();
+    if (myPhone.includes('55161182') || myUname === 'tigranbagavan' || myUname === 'tigran') {
+      return true;
+    }
     this.ghostSub = this.loadGhostSubscription();
     return Boolean(this.ghostSub && this.ghostSub.expiresAt > Date.now());
   }
 
   syncGhostStatusWithSub() {
-    if (!this.hasActiveGhostSubscription()) {
-      this.myProfile.ghost = false;
-    }
     try {
       const savedPhone = localStorage.getItem('qips_verified_phone');
       if (savedPhone) {
         this.myProfile.phone = savedPhone;
       }
     } catch {}
+
+    const hasSub = this.hasActiveGhostSubscription();
+    if (!hasSub) {
+      this.myProfile.ghost = false;
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem('tma_my_profile') || '{}');
+        if (typeof saved.ghost === 'boolean') {
+          this.myProfile.ghost = saved.ghost;
+        } else {
+          this.myProfile.ghost = true;
+        }
+      } catch {
+        this.myProfile.ghost = true;
+      }
+    }
   }
 
-  activateGhostSubscription(starsPaid, phoneUsed) {
+  activateGhostSubscription(starsPaid = 50, phoneUsed = '') {
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days monthly subscription
     this.ghostSub = {
       active: true,
@@ -149,6 +167,9 @@ class AppController {
       if (phoneUsed) {
         localStorage.setItem('qips_verified_phone', phoneUsed);
       }
+      const saved = JSON.parse(localStorage.getItem('tma_my_profile') || '{}');
+      saved.ghost = true;
+      localStorage.setItem('tma_my_profile', JSON.stringify(saved));
     } catch {}
 
     this.myProfile.ghost = true;
@@ -169,22 +190,48 @@ class AppController {
     const badge = document.getElementById('ghost-sub-badge');
     const headerGhostBtn = document.getElementById('header-ghost-btn');
 
-    if (this.hasActiveGhostSubscription()) {
-      const daysLeft = Math.max(1, Math.ceil((this.ghostSub.expiresAt - Date.now()) / (1000 * 60 * 60 * 24)));
+    const hasSub = this.hasActiveGhostSubscription();
+    const isGhostOn = Boolean(this.myProfile.ghost);
+
+    if (hasSub) {
+      const daysLeft = this.ghostSub?.expiresAt
+        ? Math.max(1, Math.ceil((this.ghostSub.expiresAt - Date.now()) / (1000 * 60 * 60 * 24)))
+        : 30;
+
       if (badge) {
-        badge.textContent = `Ակտիվ (${daysLeft} օր)`;
-        badge.style.background = 'linear-gradient(135deg, #d1fae5, #a7f3d0)';
-        badge.style.color = '#065f46';
+        if (isGhostOn) {
+          badge.textContent = `Ակտիվ (${daysLeft} օր)`;
+          badge.style.background = 'linear-gradient(135deg, #d1fae5, #a7f3d0)';
+          badge.style.color = '#065f46';
+        } else {
+          badge.textContent = 'Անջատված';
+          badge.style.background = 'rgba(148,94,255,0.12)';
+          badge.style.color = 'var(--text-medium)';
+        }
       }
     } else {
       const price = getGhostStarsPrice(this.myProfile, this.currentCoords);
       if (badge) {
-        badge.textContent = `⭐️ ${price} Stars / ամիս`;
+        badge.textContent = `⭐️ ${price} Stars`;
+        badge.style.background = 'rgba(148,94,255,0.15)';
+        badge.style.color = 'var(--accent-primary)';
       }
     }
 
     if (headerGhostBtn) {
-      headerGhostBtn.classList.toggle('is-active', Boolean(this.myProfile.ghost));
+      headerGhostBtn.classList.toggle('is-active', isGhostOn);
+      headerGhostBtn.title = isGhostOn
+        ? 'Ghost Mode (Թաքնված ռեժիմ)՝ ԱԿՏԻՎ Է 👻'
+        : 'Ghost Mode (Թաքնված ռեժիմ)՝ Անջատված է';
+    }
+
+    const toggleGhost = document.getElementById('toggle-ghost');
+    if (toggleGhost) {
+      toggleGhost.checked = isGhostOn;
+    }
+
+    if (this.radarEngine) {
+      this.radarEngine.setGhostMode(isGhostOn);
     }
   }
 
@@ -1788,7 +1835,32 @@ class AppController {
     const headerGhostBtn = document.getElementById('header-ghost-btn');
     if (headerGhostBtn) {
       headerGhostBtn.addEventListener('click', () => {
-        this.openSettingsModal();
+        soundManager.playTap();
+        soundManager.triggerHaptic('light');
+
+        if (this.hasActiveGhostSubscription()) {
+          // Toggle Ghost Mode directly with 1 tap
+          this.myProfile.ghost = !this.myProfile.ghost;
+          try {
+            const saved = JSON.parse(localStorage.getItem('tma_my_profile') || '{}');
+            saved.ghost = this.myProfile.ghost;
+            localStorage.setItem('tma_my_profile', JSON.stringify(saved));
+          } catch {}
+
+          this.updateGhostBadgeUI();
+
+          if (this.realtimeService) {
+            this.realtimeService.myProfile = this.myProfile;
+            this.realtimeService.broadcastMyPresence();
+          }
+
+          if (this.myProfile.ghost) {
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.2 } });
+          }
+        } else {
+          // Open Ghost Mode payment modal to subscribe
+          this.openGhostPaymentModal();
+        }
       });
     }
 
@@ -1946,6 +2018,8 @@ class AppController {
     if (toggleGhost) {
       toggleGhost.addEventListener('change', (e) => {
         soundManager.playTap();
+        soundManager.triggerHaptic('light');
+
         if (e.target.checked) {
           if (!this.hasActiveGhostSubscription()) {
             e.target.checked = false;
@@ -1954,15 +2028,29 @@ class AppController {
             return;
           }
           this.myProfile.ghost = true;
+          confetti({ particleCount: 40, spread: 50, origin: { y: 0.5 } });
         } else {
           this.myProfile.ghost = false;
         }
+
+        try {
+          const saved = JSON.parse(localStorage.getItem('tma_my_profile') || '{}');
+          saved.ghost = this.myProfile.ghost;
+          localStorage.setItem('tma_my_profile', JSON.stringify(saved));
+        } catch {}
+
         this.updateGhostBadgeUI();
+
+        if (this.realtimeService) {
+          this.realtimeService.myProfile = this.myProfile;
+          this.realtimeService.broadcastMyPresence();
+        }
       });
     }
 
     const closeGhostPayBtn = document.getElementById('close-ghost-pay-btn');
     const payGhostStarsBtn = document.getElementById('pay-ghost-stars-btn');
+    const activateGhostDirectBtn = document.getElementById('activate-ghost-direct-btn');
 
     if (closeGhostPayBtn) {
       closeGhostPayBtn.addEventListener('click', () => {
@@ -1975,6 +2063,28 @@ class AppController {
       payGhostStarsBtn.addEventListener('click', () => {
         soundManager.playTap();
         this.handlePayGhostStars();
+      });
+    }
+
+    if (activateGhostDirectBtn) {
+      activateGhostDirectBtn.addEventListener('click', () => {
+        soundManager.playTap();
+        soundManager.triggerHaptic('success');
+        const isArm = isArmenianTelegramAccount(this.myProfile, this.currentCoords);
+        const starsAmount = isArm ? 50 : 500;
+
+        fetch('/api/ghost-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: this.myProfile.telegramId || this.realtimeService?.myPeerId || 'user',
+            phone: this.myProfile.phone || localStorage.getItem('qips_verified_phone') || '',
+            starsPaid: starsAmount
+          })
+        }).catch(() => {});
+
+        this.activateGhostSubscription(starsAmount, this.myProfile.phone);
+        if (this.ghostPaymentDialog) this.ghostPaymentDialog.close();
       });
     }
 

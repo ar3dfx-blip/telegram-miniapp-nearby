@@ -441,17 +441,28 @@ export class RadarEngine {
     // Concentric base outer ring (inset shadow illusion)
     ctx.beginPath();
     ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(210, 213, 219, 0.35)';
+    ctx.fillStyle = this.isGhostMode ? 'rgba(148, 94, 255, 0.4)' : 'rgba(210, 213, 219, 0.35)';
     ctx.fill();
 
     // Center circular dial badge
     const centerRadius = 14;
     ctx.beginPath();
     ctx.arc(centerX, centerY, centerRadius + 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(210, 213, 219, 0.9)';
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = this.isGhostMode ? '#ede9fe' : '#ffffff';
+    ctx.shadowColor = this.isGhostMode ? 'rgba(148, 94, 255, 0.6)' : 'rgba(210, 213, 219, 0.9)';
+    ctx.shadowBlur = this.isGhostMode ? 14 : 10;
     ctx.fill();
+
+    if (this.isGhostMode) {
+      // Stealth Ghost Mode center glow
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerRadius + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(148, 94, 255, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     if (this.logoImg && this.logoImg.complete && this.logoImg.naturalWidth > 0) {
       ctx.save();
@@ -469,15 +480,19 @@ export class RadarEngine {
     } else {
       ctx.beginPath();
       ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff5e5e';
+      ctx.fillStyle = this.isGhostMode ? '#945eff' : '#ff5e5e';
       ctx.fill();
     }
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, centerRadius + 1.5, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = this.isGhostMode ? '#a855f7' : '#ffffff';
     ctx.lineWidth = 2.5;
     ctx.stroke();
     ctx.restore();
+  }
+
+  setGhostMode(isGhost) {
+    this.isGhostMode = Boolean(isGhost);
   }
 }

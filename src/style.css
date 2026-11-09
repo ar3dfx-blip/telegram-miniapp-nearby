@@ -2341,14 +2341,30 @@ input:checked + .slider-round:before {
 }
 
 #header-ghost-btn {
-  display: none;
-  color: var(--accent-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--neu-bg);
+  box-shadow: var(--neu-flat-sm);
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+#header-ghost-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--neu-flat-md);
 }
 
 #header-ghost-btn.is-active {
-  display: inline-flex;
-  background: var(--bg-secondary);
-  box-shadow: var(--neu-inset-sm);
-  border-color: rgba(148, 94, 255, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(5, 150, 105, 0.22));
+  box-shadow: var(--neu-inset-sm), 0 0 10px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #065f46;
 }
 
